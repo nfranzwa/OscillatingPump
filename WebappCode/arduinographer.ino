@@ -12,8 +12,8 @@
 #define STABLE_TIME 3000       // Time in ms that readings need to be stable for re-zeroing
 #define DRIFT_SAMPLES 10 
 // Replace with your network credentials
-const char* ssid = "Asian Crew but faster";
-const char* password = "rohanhasanicebutt";
+const char* ssid = "ssid";
+const char* password = "pw";
 long  zeroOffset = 8290303;
 bool isCalibrated = false;
 int sampleCount = 0;
