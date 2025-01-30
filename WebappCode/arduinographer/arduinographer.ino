@@ -12,13 +12,8 @@
 #define STABLE_TIME 3000       // Time in ms that readings need to be stable for re-zeroing
 #define DRIFT_SAMPLES 10 
 // Replace with your network credentials
-<<<<<<< HEAD:WebappCode/arduinographer/arduinographer.ino
-const char* ssid = "ESP32";
-const char* password = NULL;
-=======
-const char* ssid = "ssid";
-const char* password = "pw";
->>>>>>> 5b6b6fc787e765b79b0539dce6738f5de8be61ed:WebappCode/arduinographer.ino
+const char* ssid = "Asian Crew but faster";
+const char* password = "rohanhasanicebutt";
 long  zeroOffset = 8290303;
 bool isCalibrated = false;
 int sampleCount = 0;
@@ -62,7 +57,7 @@ void initLittleFS() {
 }
 
 // Initialize WiFi
-/* void initWiFi() {
+void initWiFi() {
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   Serial.println("Connecting to WiFi ..");
@@ -72,7 +67,7 @@ void initLittleFS() {
     delay(1000);
   }
   Serial.println(WiFi.localIP());
-} */
+}
 void checkAndUpdateZero(long rawPressure, float currentPSI) {
   // Check if current pressure is close to zero
   if (abs(currentPSI - 1) < DRIFT_THRESHOLD) {  // Remember we're applying -1 offset to PSI
@@ -154,17 +149,17 @@ void setup() {
   pinMode(outputpin, OUTPUT);
   // Serial port for debugging purposes
   Serial.begin(115200);
-  //initWiFi();
+  initWiFi();
   Serial.println();
   
-  // Setting the ESP as an access point
+  /* // Setting the ESP as an access point
   Serial.print("Setting AP (Access Point)…");
   // Remove the password parameter, if you want the AP (Access Point) to be open
   WiFi.softAP(ssid, password);
 
   IPAddress IP = WiFi.softAPIP();
   Serial.print("AP IP address: ");
-  Serial.println(IP);
+  Serial.println(IP); */
   initLittleFS();
   digitalWrite(outputpin, LOW);
   for(int i = 0; i < 10; i++) {
