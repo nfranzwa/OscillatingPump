@@ -13,8 +13,8 @@
 #define DRIFT_SAMPLES 10 
 
 int sliderval = 0;
-const char* ssid = "Asian Crew";
-const char* pw = "Agastulate";
+const char* ssid = "";
+const char* pw = "";
 AsyncWebServer server(80);
 AsyncEventSource events("/events");
 ESPDash dashboard(&server);
