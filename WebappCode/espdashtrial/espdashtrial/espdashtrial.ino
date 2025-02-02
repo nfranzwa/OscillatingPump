@@ -4,6 +4,8 @@
 #include <ESPAsyncWebServer.h>
 #include <ESPDash.h>
 #include <LittleFS.h>
+#include <LiquidCrystal_I2C.h>
+
 
 #define ZERO_SAMPLES 50
 #define COUNTS_PER_PSI 735990  // Increased to further scale down PSI values
@@ -13,11 +15,16 @@
 #define DRIFT_SAMPLES 10 
 
 int sliderval = 0;
-const char* ssid = "";
-const char* pw = "";
+int lcdColumns = 20;
+int lcdRows = 4;
+const char* ssid = "ESP32";
+const char* pw = "mae165bucsd";
+
 AsyncWebServer server(80);
 AsyncEventSource events("/events");
 ESPDash dashboard(&server);
+
+LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);  
 
 int newone = 0;
 long  zeroOffset = 0;
@@ -37,11 +44,6 @@ int triggered = 0;
 int ct = 0;
 int counter_button = 0;
 bool sevcount = false;
-IPAddress local_IP(192, 168, 1, 184);
-// Set your Gateway IP address
-IPAddress gateway(192, 168, 1, 1);
-
-IPAddress subnet(255, 255, 0, 0);
 
 Card pressuredisplay(&dashboard, GENERIC_CARD, "Generic1", "cmH20");
 Chart barchart(&dashboard, BAR_CHART,"Pressure (cmH20)");
@@ -67,10 +69,8 @@ void initLittleFS() {
 
 void initWiFi() {
   WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, pw);
-  if (!WiFi.config(local_IP, gateway, subnet)) {
-    Serial.println("STA Failed to configure");
-  };
+  WiFi.begin(ssid,pw);
+  
   Serial.println("Connecting to WiFi ..");
   //Serial.println(cmH20)
   while (WiFi.status() != WL_CONNECTED) {
@@ -178,11 +178,46 @@ void triggerDownload() {
 
 void setup() {
   int ct = 0;
+  lcd.init();
+  // turn on LCD backlight                      
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  // print message
+  lcd.print("Press. |");
+  // clears the display to print new message
+  // set cursor to first column, second row
+  lcd.setCursor(8,0);
+  lcd.print("Oscil.|");
+  lcd.setCursor(15,0);
+  lcd.print("Sust.");
+  lcd.setCursor(7, 1);
+  lcd.print("|");
+  lcd.setCursor(7,2);
+  lcd.print("|");
+  lcd.setCursor(7,3);
+  lcd.print("|");
+  lcd.setCursor(14, 1);
+  lcd.print("|");
+  lcd.setCursor(14,2);
+  lcd.print("|");
+  lcd.setCursor(14,3);
+  lcd.print("|");
+  lcd.setCursor(1, 3);
+  lcd.print("cmH20");
+  lcd.setCursor(10, 3);
+  lcd.print("Hz");
+  lcd.setCursor(17,3);
+  lcd.print("s");
   // put your setup code here, to run once:
   pinMode(inputpin, INPUT);   // HX710 OUT
   pinMode(outputpin, OUTPUT);
   Serial.begin(115200);
-  initWiFi();
+  //initWiFi();
+  WiFi.mode(WIFI_AP);
+  WiFi.softAPConfig(IPAddress(192, 168, 4, 1), IPAddress(192, 168, 4, 1), IPAddress(255, 255, 255, 0));
+  WiFi.softAP(ssid, pw);
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.softAPIP()); 
   Serial.println();
   initLittleFS();
   digitalWrite(outputpin, LOW);
@@ -209,11 +244,7 @@ void setup() {
   server.begin();
 
   /* Connect WiFi */
-  /* WiFi.mode(WIFI_AP);
-  WiFi.softAPConfig(IPAddress(192, 168, 4, 1), IPAddress(192, 168, 4, 1), IPAddress(255, 255, 255, 0));
-  WiFi.softAP(ssid, pw);
-  Serial.print("IP Address: ");
-  Serial.println(WiFi.softAPIP()); */
+  
  
   /* Start AsyncWebServer */
 }
@@ -295,5 +326,11 @@ void loop() {
     dashboard.sendUpdates();
   });
   dashboard.sendUpdates();
+  lcd.setCursor(0, 2);
+  lcd.print(pressuredata);
+  lcd.setCursor(10, 2);
+  lcd.print("45");
+  lcd.setCursor(16, 2);
+  lcd.print("32");
   delay(500);
 }
