@@ -1,14 +1,27 @@
 window.addEventListener('load',getReadings)
+document.getElementById("pressureSlider").addEventListener("input", function() {
+    document.getElementById("sliderValue").textContent = this.value;
+});
 
 const pressureData = [];
 
 function updateChart(newValue) {
-    pressureData.push(newValue);
+    pressureData.push(parseFloat(newValue)); // Ensure numerical values
+
     if (pressureData.length > 20) {
         pressureData.shift();
+        pressureChart.data.labels.shift(); // Remove oldest label
     }
-    pressureChart.data.datasets[0].data = pressureData;
-    pressureChart.update();
+
+    // Update labels dynamically to match data points
+    pressureChart.data.labels = pressureData.map((_, index) => index + 1);
+
+    // Explicitly update the dataset reference
+    pressureChart.data.datasets[0].data = [...pressureData]; 
+
+    // Ensure Chart.js properly detects the update
+    pressureChart.update('none');
+
 }
 
 const ctx = document.getElementById('pressuregraph').getContext('2d');
@@ -26,7 +39,7 @@ const pressureChart = new Chart(ctx, {
         }]
     },
     options: {
-        responsive: true,
+        responsive: false,
         scales: {
             x: { title: { display: true, text: 'Data Points' } },
             y: { title: { display: true, text: 'Pressure (cmH20)' } }
