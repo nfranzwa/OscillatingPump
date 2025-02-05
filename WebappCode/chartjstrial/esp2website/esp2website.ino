@@ -4,6 +4,7 @@
 #include <ESPAsyncWebServer.h>
 #include <LittleFS.h>
 #include <Arduino_JSON.h>
+#include <LiquidCrystal_I2C.h>
 
 #define ZERO_SAMPLES 50
 #define COUNTS_PER_PSI 735990  // Increased to further scale down PSI values
@@ -12,6 +13,8 @@
 #define STABLE_TIME 3000       // Time in ms that readings need to be stable for re-zeroing
 #define DRIFT_SAMPLES 10 
 // Replace with your network credentials
+int lcdColumns = 20;
+int lcdRows = 4;
 const char* ssid = "Asian Crew";
 const char* password = "Agastulate";
 long  zeroOffset = 8290303;
@@ -31,7 +34,7 @@ AsyncWebServer server(80);
 
 // Create an Event Source on /events
 AsyncEventSource events("/events");
-
+LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);  
 // Json Variable to Hold Sensor Readings
 JSONVar readings;
 
@@ -153,7 +156,35 @@ void setup() {
   Serial.begin(115200);
   initWiFi();
   Serial.println();
-  
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  // print message
+  lcd.print("Press. |");
+  // clears the display to print new message
+  // set cursor to first column, second row
+  lcd.setCursor(8,0);
+  lcd.print("Oscil.|");
+  lcd.setCursor(15,0);
+  lcd.print("Sust.");
+  lcd.setCursor(7, 1);
+  lcd.print("|");
+  lcd.setCursor(7,2);
+  lcd.print("|");
+  lcd.setCursor(7,3);
+  lcd.print("|");
+  lcd.setCursor(14, 1);
+  lcd.print("|");
+  lcd.setCursor(14,2);
+  lcd.print("|");
+  lcd.setCursor(14,3);
+  lcd.print("|");
+  lcd.setCursor(1, 3);
+  lcd.print("cmH20");
+  lcd.setCursor(10, 3);
+  lcd.print("Hz");
+  lcd.setCursor(17,3);
+  lcd.print("s");
   /* // Setting the ESP as an access point
   Serial.print("Setting AP (Access Point)…");
   // Remove the password parameter, if you want the AP (Access Point) to be open
@@ -200,11 +231,17 @@ void setup() {
 }
 
 void loop() {
-  
+  String pressuredata = readPressureRaw();
   if ((millis() - lastTime) > timerDelay) {
     // Send Events to the client with the Sensor Readings Every 10 seconds
     events.send("ping",NULL,millis());
-    events.send(readPressureRaw().c_str(),"pressure",millis());
+    events.send(pressuredata.c_str(),"pressure",millis());
     lastTime = millis();
   }
+  lcd.setCursor(0, 2);
+  lcd.print(pressuredata);
+  lcd.setCursor(10, 2);
+  lcd.print("45");
+  lcd.setCursor(16, 2);
+  lcd.print("32");
 }

@@ -1,7 +1,17 @@
 window.addEventListener('load',getReadings)
 document.getElementById("pressureSlider").addEventListener("input", function() {
-    document.getElementById("sliderValue").textContent = this.value;
+    document.getElementById("pressliderValue").textContent = this.value;
 });
+document.getElementById("OscillationSlider").addEventListener("input", function() {
+    document.getElementById("oscillationsliderval").textContent = this.value;
+});
+document.getElementById("CuffVolumeSlider").addEventListener("input", function() {
+    document.getElementById("cuffval").textContent = this.value;
+});
+document.getElementById("SustainTimeSlider").addEventListener("input", function() {
+    document.getElementById("sustaintime").textContent = this.value;
+});
+
 
 const pressureData = [];
 
