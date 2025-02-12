@@ -4,7 +4,7 @@
 <head>
   <title>DASHBOARD</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="\styles.css">
   <script src="node_modules\chart.js\dist\chart.umd.js"></script>
 </head>
 
@@ -19,16 +19,17 @@
   <div class="slider-group">
     <div class="slider-container">
       <label for="pressureSlider">Pressure (cmH20)</label>
-      <span id="pressliderValue">%SLIDERVALUE</span>
-      <input onchange="updateSliderPWM(this)" class="slider" type="range" id="slider1" min="0" max="50" value="0" step="1">
+      <span id="pressliderValue">%SLIDERVALUE%</span>
+      <input type="range" onchange="updateslider(this)" id="pressureSlider" min="0" max="50" value="%SLIDERVALUE%"
+        step="1" class="slider">
     </div>
     <div class="slider-container">
       <label for="OscillationSlider">Oscillation Frequency (Hz)</label>
-      <input class="slider" type="range" id="OscillationSlider" min="0" max="30" value="0" step="1">
+      <input class="slider" valuetype="range" id="OscillationSlider" min="0" max="30" value="0" step="1">
       <span id="oscillationsliderval">0</span>
     </div>
     <div class="slider-container">
-      <label for="CuffVolumeSlider">Cuff Volume (cc)</label>
+      <label for="CuffVolumeSlider">Cuff Vodsdslume (cc)</label>
       <input class="slider" type="range" id="CuffVolumeSlider" min="5" max="30" value="0" step="5">
       <span id="cuffval">0</span>
     </div>
@@ -36,11 +37,13 @@
       <label for="SustainTimeSlider">Sustain Time (s)</label>
       <input class="slider" type="range" id="SustainTimeSlider" min="0" max="60" value="0" step="1">
       <span id="sustaintime">0</span>
-      </div>
+    </div>
   </div>
   <button class="download-button">Download Data</button>
   <button class="user-manual">User Manual</button>
+
   <script src="script.js"></script>
+
 </body>
 
 </html>
