@@ -4,8 +4,7 @@
 
 #define TXD1 18
 #define RXD1 19
-#define TXD2 34
-#define RXD2 35
+
 #define ZERO_SAMPLES 50
 #define COUNTS_PER_PSI 735990  // Increased to further scale down PSI values
 #define PSI_TO_CMH2O 70.307    // Conversion factor from PSI to cmH2O

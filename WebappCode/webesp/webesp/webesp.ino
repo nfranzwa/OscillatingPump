@@ -7,8 +7,7 @@
 
 #define TXD1 16
 #define RXD1 17
-#define TXD2 25
-#define RXD2 33
+
 // Use Serial1 for UART communication
 
 //HardwareSerial Serial2(1);
@@ -65,7 +64,7 @@ void writeToCSV(float pressure, float timeStamp, int newfile) {
   if (newfile == 1) {
 
     File file = LittleFS.open("/data.csv", "w");
-    file.printf("Time", "Pressure");
+    file.printf("Time\n", "Pressure\n");
     file.printf("%.2f,%.2f\n", timeStamp, pressure);
     Serial.println(file);
 
@@ -181,7 +180,7 @@ void loop() {
       } else {
         newfile = 0;
       }
-      unsigned currentTime = millis() / 100;
+      unsigned currentTime = millis();
       writeToCSV(sensorpres.toFloat(), currentTime, newfile);
       seconditer = true;
     } else {
