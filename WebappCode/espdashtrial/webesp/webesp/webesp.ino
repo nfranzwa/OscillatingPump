@@ -63,9 +63,12 @@ void initWiFi() {
 
 void writeToCSV(float pressure, float timeStamp, int newfile) {
   if (newfile == 1) {
+
     File file = LittleFS.open("/data.csv", "w");
     file.printf("Time", "Pressure");
     file.printf("%.2f,%.2f\n", timeStamp, pressure);
+    Serial.println(file);
+
     file.close();
   } else if (newfile == 0) {
     File file = LittleFS.open("/data.csv", "a");
@@ -74,17 +77,6 @@ void writeToCSV(float pressure, float timeStamp, int newfile) {
   }
 };
 
-void triggerDownload() {
-  File file = LittleFS.open("/data.csv", "r");
-  if (!file) {
-    Serial.println("Failed to open CSV file");
-    return;
-  }
-  file.close();
-  server.on("/trigger", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send(200, "text/html", "<script>window.location.href='/download';</script>");
-  });
-}
 
 void setup() {
   Serial.begin(115200);
@@ -109,9 +101,14 @@ void setup() {
     }
     request->send(200, "text/plain", "OK");
   });
-  server.on("/download", HTTP_GET, [](AsyncWebServerRequest *request) {
+  server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request) {
     request->send(LittleFS, "/data.csv", "text/csv");
   });
+
+  server.on("/usermanual", HTTP_GET, [](AsyncWebServerRequest *request) {
+    request->send(LittleFS, "/usermanual.pdf", "application/pdf", true);
+  });
+
   server.on("/Oscillation", HTTP_GET, [](AsyncWebServerRequest *request) {
     String inputMessage;
     // GET input1 value on <ESP_IP>/slider?value=<inputMessage>
@@ -184,7 +181,7 @@ void loop() {
       } else {
         newfile = 0;
       }
-      unsigned currentTime = millis() / 1000;
+      unsigned currentTime = millis() / 100;
       writeToCSV(sensorpres.toFloat(), currentTime, newfile);
       seconditer = true;
     } else {

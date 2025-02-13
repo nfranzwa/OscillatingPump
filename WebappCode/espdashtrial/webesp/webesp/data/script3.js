@@ -5,11 +5,6 @@ function changeValues(button, step) {
   let name = input.getAttribute("name"); // Get the name attribute of the input
   let newValue = Math.min(Math.max(parseInt(input.value) + step, 0), 30); // Ensure value stays in range
   input.value = newValue;
-  
-  /* let displaySpan = button.closest(".input-group").querySelector("span");
-    if (displaySpan) {
-        displaySpan.textContent = newValue;
-    } // Update span text */
   var name2 = "/" + name + "?value=";
   var xhr = new XMLHttpRequest();
   xhr.open("GET",name2+newValue,true);
@@ -18,8 +13,10 @@ function changeValues(button, step) {
 }
 const pressureData = [];
 let isRecording = false;
+let hasrecorded = false;
 
 function toggleRecording(element){
+  hasrecorded = true;
   isRecording = !isRecording;
   const button = element;
   if (isRecording){
@@ -36,6 +33,24 @@ function toggleRecording(element){
   xhr.send();
 }
 
+
+function triggerDownload(element) {
+  const link = document.createElement("a");
+  name3 = element.getAttribute("name");
+  if (name3 == "data"){
+    if (hasrecorded == true){
+      link.href = "/data";
+      element.disabled = false;
+    }
+    
+  } else {
+    link.href = "/usermanual";
+  }; 
+  link.download = ""; // The browser will use the default filename from the server
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
 
 
 function updateChart(newValue) {

@@ -110,6 +110,10 @@ canvas {
   cursor: pointer;
   transition: background 0.3s ease;
 }
+
+.download-button:disabled{
+  cursor: not-allowed;
+}
 .download-button, .user-manual{
   padding: 30px 40px;
   font-size: 16px;
