@@ -1,31 +1,42 @@
 window.addEventListener('load', getReadings);
 
-
-function updateslider(element) {
-  var sliderNumber = element.id.charAt(element.id.length - 1);
-  var sliderValue = document.getElementById(element.id).value;
-  //var sliderValue = document.getElementById("pressureSlider").value;
-  document.getElementById("pressliderValue").innerHTML = sliderValue;
-  console.log(sliderValue);
+function changeValues(button, step) {
+  let input = button.parentElement.querySelector("input"); // Get the input field inside the same .input-group
+  let name = input.getAttribute("name"); // Get the name attribute of the input
+  let newValue = Math.min(Math.max(parseInt(input.value) + step, 0), 30); // Ensure value stays in range
+  input.value = newValue;
+  
+  /* let displaySpan = button.closest(".input-group").querySelector("span");
+    if (displaySpan) {
+        displaySpan.textContent = newValue;
+    } // Update span text */
+  var name2 = "/" + name + "?value=";
   var xhr = new XMLHttpRequest();
-  xhr.open("GET", "/pressureslider?value=" + sliderValue, true);
+  xhr.open("GET",name2+newValue,true);
+  xhr.send();
+  
+}
+const pressureData = [];
+let isRecording = false;
+
+function toggleRecording(element){
+  isRecording = !isRecording;
+  const button = element;
+  if (isRecording){
+    button.textContent = "Stop Recording";
+    button.style.backgroundColor = "red";
+    var path = "/record?value=1";
+  } else{
+    button.textContent = "Start Recording";
+    button.style.backgroundColor ="#04AA6D";
+    var path = "/record?value=0";
+  }
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET",path,true);
   xhr.send();
 }
-window.updateslider = updateslider;
 
 
-document.getElementById("OscillationSlider").addEventListener("input", function () {
-  document.getElementById("oscillationsliderval").textContent = this.value;
-});
-document.getElementById("CuffVolumeSlider").addEventListener("input", function () {
-  document.getElementById("cuffval").textContent = this.value;
-});
-document.getElementById("SustainTimeSlider").addEventListener("input", function () {
-  document.getElementById("sustaintime").textContent = this.value;
-});
-
-
-const pressureData = [];
 
 function updateChart(newValue) {
   pressureData.push(parseFloat(newValue)); // Ensure numerical values

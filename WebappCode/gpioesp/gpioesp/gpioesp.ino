@@ -1,9 +1,11 @@
 #include <LiquidCrystal_I2C.h>
 #include <WiFi.h>
-#include <esp_now.h>
 
 
-
+#define TXD1 18
+#define RXD1 19
+#define TXD2 34
+#define RXD2 35
 #define ZERO_SAMPLES 50
 #define COUNTS_PER_PSI 735990  // Increased to further scale down PSI values
 #define PSI_TO_CMH2O 70.307    // Conversion factor from PSI to cmH2O
@@ -11,20 +13,20 @@
 #define STABLE_TIME 3000       // Time in ms that readings need to be stable for re-zeroing
 #define DRIFT_SAMPLES 10       // Number of samples to check for drift
 
-uint8_t broadcastAddress[] = {0xf8, 0xb3, 0xb7, 0x4f, 0x4f, 0xf8};
-/* float pressure;
-float oscfreq;
-float susttime; */
 
-float incomingpres;
-float incomingoscfreq;
-float incomingsusttime;
+
+//HardwareSerial Serial2(2);
+HardwareSerial mySerial(1);
+
+float webpressure;
+float oscfreq;
+float susttime;
 
 int lcdColumns = 20;
 int lcdRows = 4;
 LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);
 String success;
-long  zeroOffset = 8290303;
+long zeroOffset = 8290303;
 bool isCalibrated = false;
 int sampleCount = 0;
 long calibrationSum = 0;
@@ -37,36 +39,6 @@ int stableSampleCount = 0;
 const int inputpin = 15;
 const int outputpin = 2;
 
-typedef struct struct_message{
-  float pres;
-  float osc;
-  float sust;
-}struct_message;
-
-struct_message fromwebpage;
-/* struct_message towebpage;
- */
-esp_now_peer_info_t peerInfo;
-
-/* void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
-  Serial.print("\r\nLast Packet Send Status:\t");
-  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
-  if (status ==0){
-    success = "Delivery Success :)";
-  }
-  else{
-    success = "Delivery Fail :(";
-  }
-}
- */
-void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
-  memcpy(&fromwebpage, incomingData, sizeof(fromwebpage));
-  Serial.print("Bytes received: ");
-  Serial.println(len);
-  incomingpres = fromwebpage.pres;
-  incomingoscfreq = fromwebpage.osc;
-  incomingsusttime = fromwebpage.sust;
-}
 
 void checkAndUpdateZero(long rawPressure, float currentPSI) {
   // Check if current pressure is close to zero
@@ -78,10 +50,9 @@ void checkAndUpdateZero(long rawPressure, float currentPSI) {
       stableSampleCount = 1;
     } else {
       stableSampleCount++;
-      
+
       // Check if we've been stable long enough and have enough samples
-      if (stableSampleCount >= DRIFT_SAMPLES && 
-          (millis() - stableStartTime) >= STABLE_TIME) {
+      if (stableSampleCount >= DRIFT_SAMPLES && (millis() - stableStartTime) >= STABLE_TIME) {
         // Update zero offset
         zeroOffset = rawPressure;
         stableSampleCount = 0;
@@ -99,12 +70,12 @@ float convertToPSI(long rawValue, long zero) {
 }
 
 String readPressureRaw() {
-  
+
   while (digitalRead(inputpin)) {}
 
   long result = 0;
   noInterrupts();
-  
+
   for (int i = 0; i < 24; i++) {
     digitalWrite(outputpin, HIGH);
     digitalWrite(outputpin, LOW);
@@ -113,27 +84,27 @@ String readPressureRaw() {
       result++;
     }
   }
-  
+
   for (char i = 0; i < 3; i++) {
     digitalWrite(outputpin, HIGH);
-    digitalWrite(outputpin, LOW);  }
-  
+    digitalWrite(outputpin, LOW);
+  }
+
   interrupts();
 
   float pressure = result ^ 0x800000;
-  if (!isCalibrated){
+  if (!isCalibrated) {
     calibrationSum += pressure;
     sampleCount++;
-    if (sampleCount >= 3){
-      float zeroOffset = calibrationSum/3;
+    if (sampleCount >= 3) {
+      float zeroOffset = calibrationSum / 3;
       isCalibrated = true;
-      
     }
     return "";
   } else {
-    float psi = convertToPSI(pressure , zeroOffset);
+    float psi = convertToPSI(pressure, zeroOffset);
     float cmH20 = psi * 70.307;
-    String pressurern = String(cmH20,3);
+    String pressurern = String(cmH20, 2);
     return pressurern;
   }
 };
@@ -148,37 +119,18 @@ float convertToCmH2O(float psi) {
 
 
 void setup() {
-  pinMode(inputpin,INPUT);
+  pinMode(inputpin, INPUT);
   pinMode(outputpin, OUTPUT);
-  // Serial port for debugging purposes
   Serial.begin(115200);
-
+  mySerial.begin(115200, SERIAL_8N1, RXD1, TXD1);
   WiFi.mode(WIFI_STA);
-  if (esp_now_init() != ESP_OK) {
-    Serial.println("Error initializing ESP-NOW");
-    return;
-  }
-
-  //esp_now_register_send_cb(OnDataSent);
-  memcpy(peerInfo.peer_addr, broadcastAddress, 6);
-  peerInfo.channel = 0;  
-  peerInfo.encrypt = false;
-  if (esp_now_add_peer(&peerInfo) != ESP_OK){
-    Serial.println("Failed to add peer");
-    return;
-  }
-  // Register for a callback function that will be called when data is received
-  esp_now_register_recv_cb(esp_now_recv_cb_t(OnDataRecv));
-
-  // Initialize sensor - power cycle the clock line
   digitalWrite(outputpin, LOW);
   delay(100);
-  for(int i = 0; i < 10; i++) {
+  for (int i = 0; i < 10; i++) {
     digitalWrite(outputpin, HIGH);
 
     digitalWrite(outputpin, LOW);
   }
-
   lcd.init();
   lcd.backlight();
   lcd.setCursor(0, 0);
@@ -205,43 +157,32 @@ void setup() {
   lcd.print("Hz");
   lcd.setCursor(17, 3);
   lcd.print("s");
-
 }
 
 void loop() {
-  String pressuredata = readPressureRaw();  
+  String pressuredata = readPressureRaw();
   float presslider = pressuredata.toFloat();
-  /* towebpage.pres = presslider;
-  towebpage.osc = 6;
-  towebpage.sust = 9; */
-
-  /* esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &towebpage, sizeof(towebpage));
-  if (result == ESP_OK) {
-    Serial.println("Sent with success");
+  float pressuresensor = round(presslider * 100) / 100;
+  if (mySerial.available()) {
+    // Read data and display it
+    String message = mySerial.readStringUntil('\n');
+    //Serial.println("Received: " + message);
+    char inputArray[message.length() + 1];  // Create a char array of the correct size
+    message.toCharArray(inputArray, sizeof(inputArray));
+    char *token = strtok(inputArray, ",");
+    if (token != NULL) webpressure = atoi(token);
+    token = strtok(NULL, ",");
+    if (token != NULL) oscfreq = atoi(token);
+    token = strtok(NULL, ",");
+    if (token != NULL) susttime = atoi(token);
+    lcd.setCursor(0, 2);
+    lcd.print(pressuresensor);
+    lcd.setCursor(10, 2);
+    lcd.print(oscfreq);
+    lcd.setCursor(16, 2);
+    lcd.print(susttime);
   }
-  else {
-    Serial.println("Error sending the data");
-  }
- */
-
-  //Serial.println(fromwebpage.pres);
-
-  lcd.setCursor(0, 2);
-  lcd.print(fromwebpage.pres);
-  lcd.setCursor(10, 2);
-  lcd.print("45");
-  lcd.setCursor(16, 2);
-  lcd.print("32");
-  printstuff();
-  delay(1000);
-}
-
-void printstuff(){
-  Serial.println("INCOMING READINGS");
-  Serial.print("Pressure: ");
-  Serial.print(fromwebpage.pres);
-  Serial.print("Oscillation: ");
-  Serial.print(fromwebpage.osc);
-  Serial.print("Sustain: ");
-  Serial.print(fromwebpage.sust);
+  
+  mySerial.println(pressuresensor);
+  delay(100);
 }

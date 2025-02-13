@@ -4,73 +4,47 @@
 #include <ESPAsyncWebServer.h>
 #include <LittleFS.h>
 #include <Arduino_JSON.h>
-#include <esp_now.h>
+
+#define TXD1 16
+#define RXD1 17
+#define TXD2 25
+#define RXD2 33
+// Use Serial1 for UART communication
+
+//HardwareSerial Serial2(1);
+HardwareSerial mySerial(2);
 
 
-const char* ssid = "Asian Crew";
-const char* password = "Agastulate";
+const char *ssid = "Asian Crew";
+const char *password = "Agastulate";
 
-uint8_t broadcastAddress[] = {0x3c, 0x8a, 0x1f, 0xa8, 0xf9, 0x34};
 float pressure;
 float oscfreq;
 float susttime;
 
-/* float incomingpres;
-float incomingoscfreq;
-float incomingsusttime; */
 
 AsyncWebServer server(80);
 AsyncEventSource events("/events");
 
-String sliderValue = "0";
+String presVal = "0";
+String oscVal = "0";
+String sustVal = "0";
+String recording = "0";
+
 String success;
-const char* PARAM_INPUT = "value";
+
+const char *PARAM_INPUT = "value";
 unsigned long lastTime = 0;
 unsigned long timerDelay = 750;
+int newfile = 0;
+bool seconditer = false;
 
-String processor(const String& var){
-  //Serial.println(var);
-  if (var == "SLIDERVALUE"){
-    return sliderValue;
-  }
-  return String();
-}
-typedef struct struct_message{
-  float pres;
-  float osc;
-  float sust;
-}struct_message;
-
-/* struct_message fromsensors; */
-struct_message tosensors;
-
-esp_now_peer_info_t peerInfo;
-
-void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
-  Serial.print("\r\nLast Packet Send Status:\t");
-  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
-  if (status ==0){
-    success = "Delivery Success :)";
-  }
-  else{
-    success = "Delivery Fail :(";
-  }
-}
-
-/* void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
-  memcpy(&fromsensors, incomingData, sizeof(fromsensors));
-  Serial.print("Bytes received: ");
-  Serial.println(len);
-  incomingpres = fromsensors.pres;
-  incomingoscfreq = fromsensors.osc;
-  incomingsusttime = fromsensors.sust;
-} */
+String sensorpres = "0";
 
 void initLittleFS() {
   if (!LittleFS.begin()) {
     Serial.println("An error has occurred while mounting LittleFS");
-  }
-  else{
+  } else {
     Serial.println("LittleFS mounted successfully");
   }
 }
@@ -87,52 +61,102 @@ void initWiFi() {
   Serial.println(WiFi.localIP());
 }
 
+void writeToCSV(float pressure, float timeStamp, int newfile) {
+  if (newfile == 1) {
+    File file = LittleFS.open("/data.csv", "w");
+    file.printf("Time", "Pressure");
+    file.printf("%.2f,%.2f\n", timeStamp, pressure);
+    file.close();
+  } else if (newfile == 0) {
+    File file = LittleFS.open("/data.csv", "a");
+    file.printf("%.2f,%.2f\n", timeStamp, pressure);
+    file.close();
+  }
+};
+
+void triggerDownload() {
+  File file = LittleFS.open("/data.csv", "r");
+  if (!file) {
+    Serial.println("Failed to open CSV file");
+    return;
+  }
+  file.close();
+  server.on("/trigger", HTTP_GET, [](AsyncWebServerRequest *request) {
+    request->send(200, "text/html", "<script>window.location.href='/download';</script>");
+  });
+}
+
 void setup() {
   Serial.begin(115200);
   initWiFi();
   Serial.println();
   initLittleFS();
-  if (esp_now_init() != ESP_OK){
-    Serial.println("Error with ESP Now");
-    return;
-  }
+  mySerial.begin(115200, SERIAL_8N1, RXD1, TXD1);
 
-  esp_now_register_send_cb(OnDataSent);
-
-  memcpy(peerInfo.peer_addr,broadcastAddress,6);
-  peerInfo.channel = 0;
-  peerInfo.encrypt = false;
-
-  if (esp_now_add_peer(&peerInfo) != ESP_OK){
-    Serial.println("Failed to add peer");
-    return;
-  }
-  // Register for a callback function that will be called when data is received
-  /* esp_now_register_recv_cb(esp_now_recv_cb_t(OnDataRecv)); */
-
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
     request->send(LittleFS, "/index.html", "text/html");
   });
+  server.serveStatic("/", LittleFS, "/");
 
-  server.on("/pressureslider", HTTP_GET, [] (AsyncWebServerRequest *request) {
+  server.on("/Pressure", HTTP_GET, [](AsyncWebServerRequest *request) {
     String inputMessage;
     // GET input1 value on <ESP_IP>/slider?value=<inputMessage>
     if (request->hasParam(PARAM_INPUT)) {
       inputMessage = request->getParam(PARAM_INPUT)->value();
-      sliderValue = inputMessage;
-    }
-    else {
+      presVal = inputMessage;
+    } else {
       inputMessage = "No message sent";
     }
     request->send(200, "text/plain", "OK");
   });
-  server.on("/readings", HTTP_GET, [](AsyncWebServerRequest *request){
-    String json = "sample";
+  server.on("/download", HTTP_GET, [](AsyncWebServerRequest *request) {
+    request->send(LittleFS, "/data.csv", "text/csv");
+  });
+  server.on("/Oscillation", HTTP_GET, [](AsyncWebServerRequest *request) {
+    String inputMessage;
+    // GET input1 value on <ESP_IP>/slider?value=<inputMessage>
+    if (request->hasParam(PARAM_INPUT)) {
+      inputMessage = request->getParam(PARAM_INPUT)->value();
+      oscVal = inputMessage;
+    } else {
+      inputMessage = "No message sent";
+    }
+    request->send(200, "text/plain", "OK");
+  });
+
+  server.on("/record", HTTP_GET, [](AsyncWebServerRequest *request) {
+    String inputMessage;
+    // GET input1 value on <ESP_IP>/slider?value=<inputMessage>
+    if (request->hasParam(PARAM_INPUT)) {
+      inputMessage = request->getParam(PARAM_INPUT)->value();
+      recording = inputMessage;
+    } else {
+      inputMessage = "No message sent";
+    }
+    request->send(200, "text/plain", "OK");
+  });
+
+
+  server.on("/SustainTime", HTTP_GET, [](AsyncWebServerRequest *request) {
+    String inputMessage;
+    // GET input1 value on <ESP_IP>/slider?value=<inputMessage>
+    if (request->hasParam(PARAM_INPUT)) {
+      inputMessage = request->getParam(PARAM_INPUT)->value();
+      sustVal = inputMessage;
+    } else {
+      inputMessage = "No message sent";
+    }
+    request->send(200, "text/plain", "OK");
+  });
+
+  /* server.on("/readings", HTTP_GET, [](AsyncWebServerRequest *request) {
+    String json = String(fromsensor.pres, 3);
     request->send(200, "application/json", json);
     json = String();
-  });
-  events.onConnect([](AsyncEventSourceClient *client){
-    if(client->lastId()){
+  }); */
+
+  events.onConnect([](AsyncEventSourceClient *client) {
+    if (client->lastId()) {
       Serial.printf("Client reconnected! Last message ID that it got is: %u\n", client->lastId());
     }
     // send event with message "hello!", id current millis
@@ -143,39 +167,46 @@ void setup() {
 
   // Start server
   server.begin();
-
 }
 
 void loop() {
-  float presslider = sliderValue.toFloat();
-  tosensors.pres = presslider;
-  tosensors.osc = 2;
-  tosensors.sust = 4;
-  esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &tosensors, sizeof(tosensors));
-   
-  if (result == ESP_OK) {
-    Serial.println("Sent with success");
-  }
-  else {
-    Serial.println("Error sending the data");
-  }
-  //Serial.println(fromsensors.pres);
-  if ((millis() - lastTime) > timerDelay) {
-    // Send Events to the client with the Sensor Readings Every 10 seconds
-    events.send("ping",NULL,millis());
-    events.send(sliderValue.c_str(),"pressure",millis());
-    lastTime = millis();
-  }
- // printstuff();
-  delay(1000);
-} 
 
-void printstuff(){
-  Serial.println("INCOMING READINGS");
-  Serial.print("Pressure: ");
-  Serial.print(fromsensors.pres);
-  Serial.print("Oscillation: ");
-  Serial.print(fromsensors.osc);
-  Serial.print("Sustain: ");
-  Serial.print(fromsensors.sust);
+
+
+  if (mySerial.available()) {
+    // Read data and display it
+    String message = mySerial.readStringUntil('\n');
+    //Serial.println("Received: " + message);
+    String sensorpres = message;
+    if (recording == "1") {
+      if (seconditer == false) {
+        newfile = 1;
+      } else {
+        newfile = 0;
+      }
+      unsigned currentTime = millis() / 1000;
+      writeToCSV(sensorpres.toFloat(), currentTime, newfile);
+      seconditer = true;
+    } else {
+      seconditer = false;
+    };
+    if ((millis() - lastTime) > timerDelay) {
+      // Send Events to the client with the Sensor Readings Every 10 seconds
+      events.send("ping", NULL, millis());
+      events.send(sensorpres.c_str(), "pressure", millis());
+      lastTime = millis();
+    }
+  }
+
+
+  float PresValfloat = presVal.toFloat();
+  float OscValfloat = oscVal.toFloat();
+  float SustValfloat = sustVal.toFloat();
+
+  mySerial.print(PresValfloat);
+  mySerial.print(", ");
+  mySerial.print(OscValfloat);
+  mySerial.print(", ");
+  mySerial.println(SustValfloat);
+  delay(100);
 }
