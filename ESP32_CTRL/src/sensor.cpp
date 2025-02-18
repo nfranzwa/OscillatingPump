@@ -7,17 +7,45 @@ void PSensor::begin(){
 }
 
 float PSensor::readPressure(){
-    /* from datasheet of MP3V5010:
-    V_OUT=V_S*(.09*P+0.08) \pm V_S*(0.09*P_error * temp_factor)
-    ignoring the noise section:
-    → P = (V_OUT/V_S-.08)/.09
-    */
     float adc_value=analogRead(SENSOR_PIN);
     float voltage= (adc_value/ADC_RESOLUTION)*V_MAX;
-    float pressure= (voltage/(V_SUPPLY-.08))/.09;
-    return pressure;
+    if (SENSOR_TYPE=="NXP"){
+        /* from datasheet of MP3V5010 sensor sold by NXP:
+            https://www.nxp.com/docs/en/data-sheet/MP3V5010.pdf
+        V_OUT=V_S*(.09*P+0.08) \pm V_S*(0.09*P_error * temp_factor)
+        ignoring the noise section:
+        → P = (V_OUT/V_S-.08)/.09
+        The constant value would give a reading of .2 V at P=0 kPa
+
+        HOWEVER, following code is run with the transfer function updated as:
+        V_OUT=V_S*(.09*P+0.06) → P = (V_OUT/V_S-.06)/.09
+        */
+       return (voltage/V_SUPPLY -.06)/.09;
+    }
+    else if (SENSOR_TYPE=="ABP"){
+        /* From datasheet of ABP Analog pressure sensor:
+            https://www.mouser.com/datasheet/2/187/HWSC_S_A0013047928_1-3073376.pdf
+        Using the analog version, 
+        V_out= .8*V_SUPPLY/(P_MAX-P_MIN) * (P-P_MIN) + .10*V_SUPPLY
+        
+        Set P_MAX=10 kPa, P_MIN=0 kPa
+        */
+        return (voltage-0.1*V_SUPPLY)*(P_MAX-P_MIN)/(.8*V_SUPPLY)+P_MIN;
+    }
+    else{
+        return P_MAX;
+    }
     //CONSIDER: adding a constrain() to value
 }
+
+/*
+float PSensor::readPressureABP(){
+    float adc_value=analogRead(SENSOR_PIN);
+    float voltage= (adc_value/ADC_RESOLUTION)*V_MAX;
+    float pressure= (voltage-0.1*V_SUPPLY)*(P_MAX-P_MIN)/(.8*V_SUPPLY)+P_MIN;
+    return pressure;
+}
+*/
 
 float PSensor::filter(float measurement){
     /*
