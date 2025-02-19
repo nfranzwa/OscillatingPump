@@ -1,0 +1,41 @@
+Designator,Val,Package,Mid X,Mid Y,Rotation,Layer
+C1,10 uF,CP_Radial_D4.0mm_P1.50mm,147.55,-53.5,0.0,top
+C10,22 uF,C_0805_2012Metric,162.25,-49.6,0.0,top
+C11,0.001 uF,C_0402_1005Metric,173.32,-111.1,0.0,top
+C12,0.1 uF,C_0402_1005Metric,173.32,-113.1,0.0,top
+C13,0.1 uF,C_0402_1005Metric,173.32,-115.1,0.0,top
+C2,100 nF,C_0402_1005Metric,162.3,-43.08,90.0,top
+C3,22 uF,C_0805_2012Metric,152.25,-53.0,0.0,top
+C4,22 uF,C_0805_2012Metric,152.25,-55.5,0.0,top
+C5,1000 uF,CP_Radial_D10.0mm_P5.00mm,151.0,-43.0,0.0,top
+C6,0.1 uF,C_0402_1005Metric,141.8,-56.48,-90.0,top
+C7,0.1 uF,C_0402_1005Metric,155.3,-53.48,90.0,top
+C8,100 nF,C_0402_1005Metric,158.28,-51.6,0.0,top
+C9,22 uF,C_0805_2012Metric,162.25,-47.1,0.0,top
+D1,SS24,D_SMA,142.5,-40.5,-90.0,top
+D3,SS24,D_SMA,142.5,-48.5,-90.0,top
+J1,Barrel_Jack_Switch,BarrelJack_CLIFF_FC681465S_SMT_Horizontal,132.4,-42.0,0.0,top
+J10,Conn_01x05_Pin,PinHeader_1x05_P2.54mm_Vertical,177.3,-62.605,0.0,top
+J11,Conn_01x05_Pin,PinHeader_1x05_P2.54mm_Vertical,177.3,-77.14,0.0,top
+J12,Conn_01x04_Pin,PinHeader_1x04_P2.54mm_Vertical,167.15,-41.11,0.0,top
+J13,Conn_01x04_Pin,PinHeader_1x04_P2.54mm_Vertical,171.8,-41.11,0.0,top
+J14,Conn_01x04_Pin,PinHeader_1x04_P2.54mm_Vertical,167.15,-53.41,0.0,top
+J15,Conn_01x04_Pin,PinHeader_1x04_P2.54mm_Vertical,171.8,-53.41,0.0,top
+J16,Conn_01x05_Pin,PinHeader_1x05_P2.54mm_Vertical,177.3,-47.14,0.0,top
+J17,Conn_01x05_Pin,PinHeader_1x05_P2.54mm_Vertical,183.0,-53.96,0.0,top
+J18,Conn_01x05_Pin,PinHeader_1x05_P2.54mm_Vertical,183.0,-69.42,0.0,top
+J19,Conn_01x05_Pin,PinHeader_1x05_P2.54mm_Vertical,183.0,-84.42,0.0,top
+J2,Conn_01x02_Pin,PinHeader_1x02_P2.54mm_Vertical,128.03,-53.1,90.0,top
+J20,Conn_01x05_Pin,PinHeader_1x05_P2.54mm_Vertical,183.0,-99.96,0.0,top
+J21,Conn_01x02_Pin,PinHeader_1x02_P2.54mm_Vertical,136.03,-53.1,-90.0,top
+J3,Conn_01x19_Socket,PinHeader_1x19_P2.54mm_Vertical,148.68,-86.0,90.0,top
+J4,Conn_01x19_Socket,PinHeader_1x19_P2.54mm_Vertical,148.66,-117.0,90.0,top
+J5,Conn_01x19_Socket,PinHeader_1x19_P2.54mm_Vertical,148.66,-93.5,90.0,top
+J6,Conn_01x05_Pin,PinHeader_1x05_P2.54mm_Vertical,177.3,-92.02,0.0,top
+J7,Conn_01x19_Socket,PinHeader_1x19_P2.54mm_Vertical,148.68,-62.6,90.0,top
+J8,Conn_01x04_Pin,PinHeader_1x04_P2.54mm_Vertical,177.3,-105.55,0.0,top
+J9,Conn_01x03_Pin,PinHeader_1x03_P2.54mm_Vertical,177.3,-116.64,0.0,top
+L1,4.7 uH,L_Changjiang_FXL0530,160.85,-38.6,180.0,top
+L3,3.9 uH,L_Changjiang_FXL0530,160.8,-56.1,0.0,top
+U1,AP63203WU,TSOT-23-6,158.25,-48.4625,-90.0,top
+U2,AP63205WU,TSOT-23-6,158.9375,-44.1,0.0,top
