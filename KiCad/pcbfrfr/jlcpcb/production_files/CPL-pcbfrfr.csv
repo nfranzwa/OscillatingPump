@@ -28,9 +28,9 @@ J19,Conn_01x05_Pin,PinHeader_1x05_P2.54mm_Vertical,183.0,-84.42,0.0,top
 J2,Conn_01x02_Pin,PinHeader_1x02_P2.54mm_Vertical,128.03,-53.1,90.0,top
 J20,Conn_01x05_Pin,PinHeader_1x05_P2.54mm_Vertical,183.0,-99.96,0.0,top
 J21,Conn_01x02_Pin,PinHeader_1x02_P2.54mm_Vertical,136.03,-53.1,-90.0,top
-J3,Conn_01x19_Socket,PinHeader_1x19_P2.54mm_Vertical,148.68,-88.0,90.0,top
-J4,Conn_01x19_Socket,PinHeader_1x19_P2.54mm_Vertical,148.66,-119.1,90.0,top
-J5,Conn_01x19_Socket,PinHeader_1x19_P2.54mm_Vertical,148.66,-94.6,90.0,top
+J3,Conn_01x19_Socket,PinHeader_1x19_P2.54mm_Vertical,148.68,-86.0,90.0,top
+J4,Conn_01x19_Socket,PinHeader_1x19_P2.54mm_Vertical,148.66,-117.0,90.0,top
+J5,Conn_01x19_Socket,PinHeader_1x19_P2.54mm_Vertical,148.66,-93.5,90.0,top
 J6,Conn_01x05_Pin,PinHeader_1x05_P2.54mm_Vertical,177.3,-92.02,0.0,top
 J7,Conn_01x19_Socket,PinHeader_1x19_P2.54mm_Vertical,148.68,-62.6,90.0,top
 J8,Conn_01x04_Pin,PinHeader_1x04_P2.54mm_Vertical,177.3,-105.55,0.0,top
