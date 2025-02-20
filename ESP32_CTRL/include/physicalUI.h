@@ -11,7 +11,11 @@ class PhysicalUI {
         int s_CLK; // current state of click
         int last_s_CLK; //last state of click
         int position; //encoder position
+
+    
+        int btn_state=HIGH;
         unsigned long lastButtonPress=0.0; // time of last button press
+        unsigned long press_length=0.0; // time of last button press
         unsigned long lastLCDUpdate=0.0;
         // Menu options
         int* optValues;
@@ -19,31 +23,39 @@ class PhysicalUI {
         int optSize;
         int currentOpt;
         int increment;
-
         int view_mode;
+        
         static const int NUM_VIEW_MODES=3;
-        const String view_modes[NUM_VIEW_MODES]={"VIEW","EDIT","TEMP"};
+        /*
+        ASDR: cycle through ASDR times
+        CTRL: cycle through control params: (min P, max P, kP,kI,kD)
+        TEMP: cycle through misc. values
+        */ 
+        const String view_modes[NUM_VIEW_MODES]={"ASDR","CTRL","TEMP"};
         // static constexpr unsigned int LOOP_DELAY=3;
-        static constexpr unsigned int DEBOUNCE_DELAY=3; //ms
+        static constexpr unsigned int DEBOUNCE_DELAY=5; //ms
         static constexpr unsigned int CLICK_DELAY=50; //ms
         static constexpr unsigned int LCD_UPDATE_INTERVAL=1000; //ms
-        
+        static constexpr unsigned int MAX_BTN_CLICK =2000; //ms
         // helper funct for scrolling in negative values
         int mod(int a, int b) const { return ((a % b) + b) % b;}
+        /*
         //task handles
-        TaskHandle_t encoder_TH;
-        TaskHandle_t lcd_TH;
+        TaskHandle_t TH_encoder;
+        TaskHandle_t TH_lcd;
 
         static void encoderTask(void* parameter);
         static void lcdTask(void* parameter);
+        */
     public:
         PhysicalUI(int clk, int dt, int sw) : 
             CLK(clk), DT(dt), SW(sw),
             s_CLK(0),last_s_CLK(0),position(0),
             view_mode(0),lastButtonPress(0.0),
             optValues(nullptr),optNames(nullptr),
-            optSize(0),currentOpt(0),increment(0.0),
-            encoder_TH(nullptr), lcd_TH(nullptr) {}
+            optSize(0),currentOpt(0),increment(0.0)
+            // TH_encoder(nullptr), TH_lcd(nullptr) 
+            {}
         void begin();
         void handleEncoder();
         void handleButton();
