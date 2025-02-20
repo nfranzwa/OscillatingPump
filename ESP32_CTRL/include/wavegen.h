@@ -16,7 +16,8 @@ private:
     unsigned long lastCycleStart;
     int PWM_min;
     int PWM_max;
-
+    
+    int PWM_value;
 public:
     WaveGenerator(int pin, int pwm_min, int pwm_max, int channel = 0, int freq = 5000, int res = 12) :
         PWM_PIN(pin),PWM_min(pwm_min),PWM_max(pwm_max),  PWM_CHANNEL(channel), PWM_FREQ(freq), PWM_RESOLUTION(res) 
@@ -30,6 +31,5 @@ public:
     void updateParams(int* new_asdr,int pwm_min, int pwm_max);//update the ASDR and PWM range
     int generatePWM();
     void update(int* ADSR,int min_PWM,int max_PWM,bool debug=false);
-    int PWM_value;
 };
 #endif

@@ -133,4 +133,9 @@
  C:/Users/kongb/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_hw_support/include/soc/esp32/spiram.h \
  C:/Users/kongb/.platformio/packages/framework-arduinoespressif32/cores/esp32/io_pin_remap.h \
  C:/Users/kongb/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
- include/Rotaryencoder.h include/Sensor.h include/wavegen.h
+ include/physicalUI.h \
+ .pio/libdeps/upesy_wroom/LiquidCrystal_I2C/LiquidCrystal_I2C.h \
+ C:/Users/kongb/.platformio/packages/framework-arduinoespressif32/cores/esp32/Print.h \
+ C:/Users/kongb/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src/Wire.h \
+ C:/Users/kongb/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal.h \
+ include/Sensor.h include/wavegen.h include/sharedData.h
