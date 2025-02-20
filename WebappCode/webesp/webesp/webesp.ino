@@ -21,7 +21,7 @@ float pressure;
 float oscfreq;
 float susttime;
 
-
+int ct = 0;
 AsyncWebServer server(80);
 AsyncEventSource events("/events");
 
@@ -49,15 +49,20 @@ void initLittleFS() {
 }
 
 void initWiFi() {
+  /* WiFi.softAP(ssid); */
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
-  Serial.println("Connecting to WiFi ..");
   //Serial.println(cmH20)
+  Serial.print("Connecting to WiFi ..");
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print('.');
     delay(1000);
   }
   Serial.println(WiFi.localIP());
+  /*
+  IPAddress IP = WiFi.localIP();
+  Serial.print("AP IP address: ");
+  Serial.println(IP); */
 }
 
 void writeToCSV(float pressure, float timeStamp, int newfile) {
@@ -129,7 +134,10 @@ void setup() {
     } else {
       inputMessage = "No message sent";
     }
-    request->send(200, "text/plain", "OK");
+    request->send(200, "text/plain", recording);
+    /* String json = inputMessage;
+    request->send_P(200, "text/plain",json.c_str());
+    json = String(); */
   });
 
 
@@ -145,11 +153,7 @@ void setup() {
     request->send(200, "text/plain", "OK");
   });
 
-  /* server.on("/readings", HTTP_GET, [](AsyncWebServerRequest *request) {
-    String json = String(fromsensor.pres, 3);
-    request->send(200, "application/json", json);
-    json = String();
-  }); */
+
 
   events.onConnect([](AsyncEventSourceClient *client) {
     if (client->lastId()) {
@@ -167,6 +171,10 @@ void setup() {
 
 void loop() {
 
+  float PresValfloat = presVal.toFloat();
+  float OscValfloat = oscVal.toFloat();
+  float SustValfloat = sustVal.toFloat();
+
 
 
   if (mySerial.available()) {
@@ -174,6 +182,11 @@ void loop() {
     String message = mySerial.readStringUntil('\n');
     //Serial.println("Received: " + message);
     String sensorpres = message;
+    server.on("/readings", HTTP_GET, [](AsyncWebServerRequest *request) {
+      String json = sensorpres + "," + oscVal + "," + sustVal;
+      request->send_P(200, "text/plain", json.c_str());
+      json = String();
+    });
     if (recording == "1") {
       if (seconditer == false) {
         newfile = 1;
@@ -186,6 +199,7 @@ void loop() {
     } else {
       seconditer = false;
     };
+
     if ((millis() - lastTime) > timerDelay) {
       // Send Events to the client with the Sensor Readings Every 10 seconds
       events.send("ping", NULL, millis());
@@ -193,12 +207,6 @@ void loop() {
       lastTime = millis();
     }
   }
-
-
-  float PresValfloat = presVal.toFloat();
-  float OscValfloat = oscVal.toFloat();
-  float SustValfloat = sustVal.toFloat();
-
   mySerial.print(PresValfloat);
   mySerial.print(", ");
   mySerial.print(OscValfloat);

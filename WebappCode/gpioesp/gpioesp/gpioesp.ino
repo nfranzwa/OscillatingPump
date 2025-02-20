@@ -1,6 +1,6 @@
 #include <LiquidCrystal_I2C.h>
 #include <WiFi.h>
-
+#include <Wire.h>
 
 #define TXD1 18
 #define RXD1 19
@@ -12,8 +12,16 @@
 #define STABLE_TIME 3000       // Time in ms that readings need to be stable for re-zeroing
 #define DRIFT_SAMPLES 10       // Number of samples to check for drift
 
-
-
+float maptopsi(int value){
+  if (value < -16383) value = -16383;
+  if (value > 16383)  value = 16383;
+  // Perform the mapping:
+  // We need to scale from a 32766 range (-16383 to 16383) to a 200 range (-100 to 100)
+  float result = (value / 16383.0) * 100.0;
+  Serial.println(result);
+  result = result * 0.0145;
+  return result;
+}
 //HardwareSerial Serial2(2);
 HardwareSerial mySerial(1);
 
@@ -29,7 +37,7 @@ long zeroOffset = 8290303;
 bool isCalibrated = false;
 int sampleCount = 0;
 long calibrationSum = 0;
-
+int counterforcalib = 0;
 // Drift compensation variables
 unsigned long stableStartTime = 0;
 bool isStable = false;
@@ -69,58 +77,32 @@ float convertToPSI(long rawValue, long zero) {
 }
 
 String readPressureRaw() {
-
-  while (digitalRead(inputpin)) {}
-
-  long result = 0;
-  noInterrupts();
-
-  for (int i = 0; i < 24; i++) {
-    digitalWrite(outputpin, HIGH);
-    digitalWrite(outputpin, LOW);
-    result = (result << 1);
-    if (digitalRead(inputpin)) {
-      result++;
-    }
-  }
-
-  for (char i = 0; i < 3; i++) {
-    digitalWrite(outputpin, HIGH);
-    digitalWrite(outputpin, LOW);
-  }
-
-  interrupts();
-
-  float pressure = result ^ 0x800000;
-  if (!isCalibrated) {
-    calibrationSum += pressure;
-    sampleCount++;
-    if (sampleCount >= 3) {
-      float zeroOffset = calibrationSum / 3;
-      isCalibrated = true;
-    }
-    return "";
+  int pressure_raw = 0;
+  Wire.requestFrom(I2C_ADDRESS, 2);
+  if (Wire.available() >= 2) {
+    uint8_t highByte = Wire.read();
+    uint8_t lowByte = Wire.read();
+    pressure_raw = (highByte << 8) | lowByte;
   } else {
-    float psi = convertToPSI(pressure, zeroOffset);
-    float cmH20 = psi * 70.307;
-    String pressurern = String(cmH20, 2);
-    return pressurern;
+    Serial.println("No data received.");
   }
-};
-
-float convertToPSI(long rawValue) {
-  return (float)(rawValue - zeroOffset) / COUNTS_PER_PSI;
+  float psi = maptopsi(pressure_raw);
+  //Serial.println(psi);
+  String pressure = String(psi, 3);
+  return pressure;
 }
-
-float convertToCmH2O(float psi) {
-  return psi * PSI_TO_CMH2O;
-}
-
 
 void setup() {
   pinMode(inputpin, INPUT);
   pinMode(outputpin, OUTPUT);
   Serial.begin(115200);
+  Wire.begin();
+  Wire.beginTransmission(I2C_ADDRESS);
+  if (Wire.endTransmission() == 0) {
+    Serial.println("Pressure sensor found at 0x28.");
+  } else {
+    Serial.println("Pressure sensor not found! Check wiring.");
+  }
   mySerial.begin(115200, SERIAL_8N1, RXD1, TXD1);
   WiFi.mode(WIFI_STA);
   digitalWrite(outputpin, LOW);
@@ -181,7 +163,7 @@ void loop() {
     lcd.setCursor(16, 2);
     lcd.print(susttime);
   }
-  
+
   mySerial.println(pressuresensor);
   delay(100);
 }
