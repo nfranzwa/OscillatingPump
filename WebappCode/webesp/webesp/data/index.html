@@ -4,7 +4,7 @@
 <head>
   <title>DASHBOARD</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="/styles2.css">
+  <link rel="stylesheet" href="/styles3.css">
   <script src="node_modules/chart.js/dist/chart.umd.js"></script>
 </head>
 
@@ -49,12 +49,13 @@
  -->    </div>
   </div>
   <div class="buttons-container">
-    <button onclick="toggleRecording(this)" class="record-button">Start Recording</button>
-    <button name="data" onclick="triggerDownload(this)" class="download-button">Download Data</button>
-    <button name="manual" onclick="triggerDownload(this)" class="user-manual">User Manual</button>
+    <div class="record-button-container">
+      <button onclick="toggleRecording(this)" class="record-button">Start Recording</button>
+    </div>
+    <div id="record-message" class="hidden"></div>
   </div>
   
-  <script src="script3.js"></script>
+  <script src="script4.js"></script>
 </body>
 
 </html>

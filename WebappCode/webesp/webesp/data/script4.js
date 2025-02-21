@@ -14,42 +14,30 @@ function changeValues(button, step) {
 const pressureData = [];
 let isRecording = false;
 let hasrecorded = false;
-
+const recordMsg = document.getElementById("record-message");
 function toggleRecording(element){
   hasrecorded = true;
   isRecording = !isRecording;
   const button = element;
+  const recordMsg = document.getElementById("record-message");
+  
   if (isRecording){
     button.textContent = "Stop Recording";
     button.style.backgroundColor = "red";
     var path = "/record?value=1";
-  } else{
+    // Hide the message while recording
+    recordMsg.textContent = "";
+    recordMsg.classList.add("hidden");
+  } else {
     button.textContent = "Start Recording";
     button.style.backgroundColor ="#04AA6D";
     var path = "/record?value=0";
+    recordMsg.textContent = "Data recorded. Can be found in folder titled data (pinned on shelf)";
+    recordMsg.classList.remove("hidden");
   }
   var xhr = new XMLHttpRequest();
   xhr.open("GET",path,true);
   xhr.send();
-}
-
-
-function triggerDownload(element) {
-  const link = document.createElement("a");
-  name3 = element.getAttribute("name");
-  if (name3 == "data"){
-    if (hasrecorded == true){
-      link.href = "/data";
-      element.disabled = false;
-    }
-    
-  } else {
-    link.href = "/usermanual";
-  }; 
-  link.download = ""; // The browser will use the default filename from the server
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
 }
 
 

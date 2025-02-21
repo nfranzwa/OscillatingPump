@@ -14,8 +14,8 @@
 HardwareSerial mySerial(2);
 
 
-const char *ssid = "Asian Crew";
-const char *password = "Agastulate";
+const char *ssid = "ESP32";
+const char *password = "ucsdpumpguest";
 
 float pressure;
 float oscfreq;
@@ -49,7 +49,12 @@ void initLittleFS() {
 }
 
 void initWiFi() {
-  /* WiFi.softAP(ssid); */
+  WiFi.softAP(ssid,password); 
+  delay(100);
+  IPAddress Ip(192,168,1,85);
+  IPAddress NMask(255,255,255,0);
+  WiFi.softAPConfig(Ip,Ip,NMask);
+  /*
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   //Serial.println(cmH20)
@@ -59,27 +64,11 @@ void initWiFi() {
     delay(1000);
   }
   Serial.println(WiFi.localIP());
-  /*
-  IPAddress IP = WiFi.localIP();
+  */
+  IPAddress IP = WiFi.softAPIP();
   Serial.print("AP IP address: ");
-  Serial.println(IP); */
+  Serial.println(IP); 
 }
-
-void writeToCSV(float pressure, float timeStamp, int newfile) {
-  if (newfile == 1) {
-
-    File file = LittleFS.open("/data.csv", "w");
-    file.printf("Time\n", "Pressure\n");
-    file.printf("%.2f,%.2f\n", timeStamp, pressure);
-    Serial.println(file);
-
-    file.close();
-  } else if (newfile == 0) {
-    File file = LittleFS.open("/data.csv", "a");
-    file.printf("%.2f,%.2f\n", timeStamp, pressure);
-    file.close();
-  }
-};
 
 
 void setup() {
@@ -104,13 +93,6 @@ void setup() {
       inputMessage = "No message sent";
     }
     request->send(200, "text/plain", "OK");
-  });
-  server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send(LittleFS, "/data.csv", "text/csv");
-  });
-
-  server.on("/usermanual", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send(LittleFS, "/usermanual.pdf", "application/pdf", true);
   });
 
   server.on("/Oscillation", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -177,13 +159,14 @@ void loop() {
 
 
 
-  if (mySerial.available()) {
-    // Read data and display it
-    String message = mySerial.readStringUntil('\n');
+/*   if (mySerial.available()) {
+ */    // Read data and display it
+    //String message = mySerial.readStringUntil('\n');
+    String message = "45";
     //Serial.println("Received: " + message);
-    String sensorpres = message;
+    sensorpres = message;
     server.on("/readings", HTTP_GET, [](AsyncWebServerRequest *request) {
-      String json = sensorpres + "," + oscVal + "," + sustVal;
+      String json =  sensorpres + "," + oscVal + "," + sustVal;
       request->send_P(200, "text/plain", json.c_str());
       json = String();
     });
@@ -194,7 +177,6 @@ void loop() {
         newfile = 0;
       }
       unsigned currentTime = millis();
-      writeToCSV(sensorpres.toFloat(), currentTime, newfile);
       seconditer = true;
     } else {
       seconditer = false;
@@ -206,7 +188,7 @@ void loop() {
       events.send(sensorpres.c_str(), "pressure", millis());
       lastTime = millis();
     }
-  }
+  //}
   mySerial.print(PresValfloat);
   mySerial.print(", ");
   mySerial.print(OscValfloat);

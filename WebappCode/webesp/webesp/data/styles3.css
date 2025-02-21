@@ -88,19 +88,38 @@ canvas {
   color: #333;
   margin-top: 5px;
 }
-
 .buttons-container {
   display: flex;
-  justify-content: space-between; /* Ensure buttons are on the same row */
-  gap: 200px; /* Space between the buttons */
-  position: absolute;
-  top: 600px; 
-  left: 250px;/* Position below the graph */
-/*   transform: translateX(-50%); /* Center the buttons horizontally */
+  flex-direction: column;
+  align-items: center;
 }
+
+.record-button-container {
+  width: 300px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+#record-message {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+  background: #ecf0f1;
+  padding: 10px 10px;
+  border-radius: 5px;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+  transition: opacity 0.3s ease;
+  text-align: center;
+}
+
+/* Hide element when there is no message */
+.hidden {
+  display: none;
+}
+
 
 .record-button{
-  padding: 30px 40px;
+  padding: 20px 20px;
   font-size: 16px;
   font-weight: bold;
   background-color: #04AA6D;
@@ -111,21 +130,3 @@ canvas {
   transition: background 0.3s ease;
 }
 
-.download-button:disabled{
-  cursor: not-allowed;
-}
-.download-button, .user-manual{
-  padding: 30px 40px;
-  font-size: 16px;
-  font-weight: bold;
-  background-color: #04AA6D;
-  color: white;
-  border: navy;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background 0.3s ease;
-}
-
-.download-button:hover, .user-manual:hover {
-  background-color: #038f5a;
-}
