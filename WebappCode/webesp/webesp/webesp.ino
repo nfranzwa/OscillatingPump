@@ -14,8 +14,8 @@
 HardwareSerial mySerial(2);
 
 
-const char *ssid = "Asian Crew";
-const char *password = "Agastulate";
+const char *ssid ="";
+const char *password = "";
 
 float pressure;
 float oscfreq;
