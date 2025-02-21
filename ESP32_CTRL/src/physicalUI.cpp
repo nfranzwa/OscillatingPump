@@ -15,39 +15,10 @@ void PhysicalUI::setOptions(int* values, String* names, int inc) {
     optSize = sizeof(values); //simple pointer arithmetic
     increment=inc;
 }
-/*void PhysicalUI::handleButton(){
-    int btn_state = digitalRead(SW);
-    //button press detected
-    if (btn_state == LOW) {
-        //intentional button press
-        if (millis() - lastButtonPress > CLICK_DELAY) {
-            //single button press:
-            if(!buttonHeld){
-                view_mode = (view_mode + 1) % NUM_VIEW_MODES;
-                sharedData.mode_current = getViewMode();  // Update sharedData
-                // Serial.printf("View Mode: %s\n", sharedData.mode_current.c_str());
-            }
-            sharedData.mode_current="EDIT";
-            Serial.printf("Mode:%s\t%d\n",sharedData.mode_current,view_mode);
-            buttonHeld=true;
-        }
-        lastButtonPress = millis();
-    } else{
-        //button is released: save changes if in edit mode
-        if (buttonHeld=true){
-            //revert to previous view mode
-            sharedData.mode_current=getViewMode();
-            //exit edit mode
-            buttonHeld=false;
-            //Serial.printf("Saved: %s = %d\n",     sharedData.param_current.c_str(), sharedData.value_current);
-        }
-    }
-}
-*/
 
 void PhysicalUI::handleButton(){
     // int btn_state=digitalRead(SW)
-    //if button state changes from previous stored
+    // if button state changes from previous stored
     if(btn_state!=digitalRead(SW)){
         //button is pushed
         if(btn_state==LOW) lastButtonPress=millis(); //start tracking time of press
@@ -89,6 +60,8 @@ void PhysicalUI::handleEncoder(){
                 // (sharedData.mode_current=="EDIT") ? optValues[mod(position,optSize)]+=increment : position++;
             }
             // only update the value if it is within safe threshold
+            // Motor will throw a fit if it is running half the time;
+            // basically 
             if(sharedData.value_current>=100) {
                 optValues[mod(position,optSize)]=sharedData.value_current;
                 sharedData.ASDR[mod(position,optSize)]= sharedData.value_current;
