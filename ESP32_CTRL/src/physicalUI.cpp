@@ -1,7 +1,7 @@
 #include <physicalUI.h>
 #include <Arduino.h>
 #include "sharedData.h"
-
+#include <wavegen.h>
 void PhysicalUI::begin() {
     pinMode(CLK, INPUT);
     pinMode(DT, INPUT);
@@ -63,8 +63,14 @@ void PhysicalUI::handleEncoder(){
             // Motor will throw a fit if it is running half the time;
             // basically 
             if(sharedData.value_current>=100) {
-                optValues[mod(position,optSize)]=sharedData.value_current;
-                sharedData.ASDR[mod(position,optSize)]= sharedData.value_current;
+                if(sharedData.ASDR[0]+sharedData.ASDR[2]>sharedData.ASDR[1]+sharedData.ASDR[3]){
+                    sharedData.err_msg="SAFETY: ↓A+D or ↑S+R";
+                }
+                else{
+                    optValues[mod(position,optSize)]=sharedData.value_current;
+                    sharedData.ASDR[mod(position,optSize)]= sharedData.value_current;
+                    sharedData.err_msg="";
+                }
             }
         }
         else{ //other view modes
@@ -87,6 +93,7 @@ void PhysicalUI::update(bool debug) {
     // delay(LOOP_DELAY); // Help debounce reading with slight delay
 }
 
+//currently not used
 void PhysicalUI::updateLCD(float pressure, float target,bool debug){
     if (lcd==nullptr) {
         if (debug) Serial.println("LCD not instanced. (null ptr)\n");
@@ -133,7 +140,11 @@ void TF_lcd(void* pvParams){
         lcd->setCursor(0, 1);
         lcd->printf("%-7s:%5d ms", sharedData.param_current.c_str(), sharedData.value_current);
         lcd->setCursor(0, 2);
-        lcd->printf("T1:%-4.0f P:%-2.2f kPa", (float) sharedData.PWM_value, sharedData.P_current);
+        lcd->printf("T1:%-4.0f P:%2.2f kPa", (float) sharedData.PWM_value, sharedData.P_current);
+        lcd->setCursor(0,3);
+        // lcd->scrollDisplayRight();
+        lcd->printf("%s",sharedData.err_msg);
+        lcd->printf("%s","                    ");
         // Serial.printf("T1:%-4.0f P:%-2.2f kPa\n", (float) sharedData.PWM_value, sharedData.P_current);
         // updateLCD(sharedData.P_current,(float) sharedData.PWM_value);
         vTaskDelay(pdMS_TO_TICKS(50));
