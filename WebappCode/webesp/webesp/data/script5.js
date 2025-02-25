@@ -7,40 +7,57 @@ function changeValues(button, step) {
   input.value = newValue;
   var name2 = "/" + name + "?value=";
   var xhr = new XMLHttpRequest();
-  xhr.open("GET",name2+newValue,true);
+  xhr.open("GET", name2 + newValue, true);
   xhr.send();
-  
+
 }
 const pressureData = [];
 let isRecording = false;
+let isCalibrated = 0;
 let hasrecorded = false;
-const recordMsg = document.getElementById("record-message");
-function toggleRecording(element){
+//const recordMsg = document.getElementById("record-message");
+
+function toggleRecording(element) {
   hasrecorded = true;
   isRecording = !isRecording;
   const button = element;
-  const recordMsg = document.getElementById("record-message");
-  
-  if (isRecording){
+  // const recordMsg = document.getElementById("record-message");
+
+  if (isRecording) {
     button.textContent = "Stop Recording";
     button.style.backgroundColor = "red";
     var path = "/record?value=1";
     // Hide the message while recording
-    recordMsg.textContent = "";
-    recordMsg.classList.add("hidden");
+    //recordMsg.textContent = "";
+    //recordMsg.classList.add("hidden");
   } else {
     button.textContent = "Start Recording";
-    button.style.backgroundColor ="#04AA6D";
+    button.style.backgroundColor = "#04AA6D";
     var path = "/record?value=0";
-    recordMsg.textContent = "Data recorded. Can be found in folder titled data (pinned on shelf)";
-    recordMsg.classList.remove("hidden");
+    //recordMsg.textContent = "Data recorded. Can be found in folder titled data (pinned on shelf)";
+    //recordMsg.classList.remove("hidden");
   }
   var xhr = new XMLHttpRequest();
-  xhr.open("GET",path,true);
+  xhr.open("GET", path, true);
   xhr.send();
 }
 
+function calibrating(button) {
 
+  isCalibrated = !isCalibrated;
+  
+  if (isCalibrated){
+
+  }
+  document.getElementById('record-button').disabled = false;
+  document.getElementById('standby-button').disabled = false;
+
+ 
+}
+
+function standby(element) {
+
+}
 function updateChart(newValue) {
   pressureData.push(parseFloat(newValue)); // Ensure numerical values
 

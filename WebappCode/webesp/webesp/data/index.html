@@ -2,31 +2,37 @@
 <html>
 
 <head>
-  <title>DASHBOARD</title>
+  <title>Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="/styles3.css">
+  <link rel="stylesheet" href="/styles4.css">
   <script src="node_modules/chart.js/dist/chart.umd.js"></script>
 </head>
 
 <body>
+
+
+
   <div class="topnav">
     <h1 id="header"> Pressure Waveform and Control Data</h1>
   </div>
+
+
   <div class="container">
     <canvas id="pressuregraph" width="700" height="400"></canvas>
   </div>
+
+
+
   <div class="input-group">
     <div class="input-container">
       <label for="PressureInput">Pressure (cmH20)</label>
       <div class="input-wrapper">
-
         <button onclick="changeValues(this,-1)" class="minus-btn">-</button>
         <input type="number" name="Pressure" id="PressureInput" min="0" max="30" value="0" step="1"
           style="width: 100px;  text-align: center;">
         <button onclick="changeValues(this,1)" class="plus-btn">+</button>
       </div>
-<!--       <span id="pressval">0</span>
- -->    </div>
+    </div>
     <div class="input-container">
       <label for="OscillationInput">Oscillation Frequency (Hz)</label>
       <div class="input-wrapper">
@@ -35,8 +41,7 @@
           style="width: 100px;  text-align: center;">
         <button onclick="changeValues(this,1)">+</button>
       </div>
-<!--       <span id="oscillationval">0</span>
- -->    </div>
+    </div>
     <div class="input-container">
       <label for="SustainInput">Sustain Time (s)</label>
       <div class="input-wrapper">
@@ -45,17 +50,40 @@
           style="width: 100px;  text-align: center;">
         <button onclick="changeValues(this,1)">+</button>
       </div>
-<!--       <span id="sustainval">0</span>
- -->    </div>
+    </div>
   </div>
+
+
+
   <div class="buttons-container">
     <div class="record-button-container">
-      <button onclick="toggleRecording(this)" class="record-button">Start Recording</button>
+      <button onclick="toggleRecording(this)" class="record-button" id="record-button" disabled>Start Recording</button>
     </div>
     <div id="record-message" class="hidden"></div>
+    <div class="calibration-button-container">
+      <button onclick="calibrating(this)" class="calibration-button" id="calibration-button">Calibrate</button>
+    </div>
+    <div id="calibration-message" class="hidden"></div>
+    <div class="standby-button-container">
+      <button onclick="standby(this)" class="standby-button" id="standby-button" disabled>Standby Mode</button>
+    </div>
+    <div id="calibration-message" class="hidden message">Calibration message</div>
   </div>
-  
-  <script src="script4.js"></script>
+
+
+
+  <div class="slider-container">
+    <div class="slider-title">Position Control</div>
+    <input type="range" min="0" max="100" step="25" value="0" class="stroke-slider">
+    <div class="slider-labels">
+      <span>100</span>
+      <span>75</span>
+      <span>50</span>
+      <span>25</span>
+      <span>0</span>
+    </div>
+  </div>
+  <script src="script5.js"></script>
 </body>
 
 </html>

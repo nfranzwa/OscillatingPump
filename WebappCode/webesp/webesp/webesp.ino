@@ -14,19 +14,18 @@
 HardwareSerial mySerial(2);
 
 
-<<<<<<< HEAD
-const char *ssid = "ESP32";
-const char *password = "ucsdpumpguest";
-=======
-const char *ssid ="";
-const char *password = "";
->>>>>>> 52c056bb201666429f10eb20ac47cd37ba866b0f
+/* const char *ssid = "ESP32";
+const char *password = "ucsdpumpguest"; */
+
+const char *ssid = "Asian Crew";
+const char *password = "Agastulate";
+
+String calibrationstate = "0";
 
 float pressure;
 float oscfreq;
 float susttime;
 
-int ct = 0;
 AsyncWebServer server(80);
 AsyncEventSource events("/events");
 
@@ -54,12 +53,12 @@ void initLittleFS() {
 }
 
 void initWiFi() {
-  WiFi.softAP(ssid,password); 
+  /* WiFi.softAP(ssid,password); 
   delay(100);
   IPAddress Ip(192,168,1,85);
   IPAddress NMask(255,255,255,0);
-  WiFi.softAPConfig(Ip,Ip,NMask);
-  /*
+  WiFi.softAPConfig(Ip,Ip,NMask); */
+  
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   //Serial.println(cmH20)
@@ -69,10 +68,10 @@ void initWiFi() {
     delay(1000);
   }
   Serial.println(WiFi.localIP());
-  */
+  /* 
   IPAddress IP = WiFi.softAPIP();
   Serial.print("AP IP address: ");
-  Serial.println(IP); 
+  Serial.println(IP);  */
 }
 
 
@@ -127,7 +126,16 @@ void setup() {
     json = String(); */
   });
 
-
+  server.on("/calibration", HTTP_GET, [](AsyncWebServerRequest *request) {
+    String inputMessage;
+    // GET input1 value on <ESP_IP>/slider?value=<inputMessage>
+    if (request->hasParam(PARAM_INPUT)) {
+      inputMessage = request->getParam(PARAM_INPUT)->value();
+      calibration = inputMessage;
+    } else {
+      inputMessage = "No message sent";
+    }
+    request->send(200, "text/plain", recording);
   server.on("/SustainTime", HTTP_GET, [](AsyncWebServerRequest *request) {
     String inputMessage;
     // GET input1 value on <ESP_IP>/slider?value=<inputMessage>
@@ -172,6 +180,11 @@ void loop() {
     sensorpres = message;
     server.on("/readings", HTTP_GET, [](AsyncWebServerRequest *request) {
       String json =  sensorpres + "," + oscVal + "," + sustVal;
+      request->send_P(200, "text/plain", json.c_str());
+      json = String();
+    });
+    server.on("/calstate", HTTP_GET, [](AsyncWebServerRequest *request) {
+      String json =  calibrationstate;
       request->send_P(200, "text/plain", json.c_str());
       json = String();
     });
