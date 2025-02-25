@@ -30,7 +30,7 @@ class MotorControl {
         void updateParameters();
         void readAndPrintSensor();
         void TH_motor(void* pvParams);
-        // void mapPressure();
+        void mapPressure();
     };
 
 #endif

@@ -66,12 +66,11 @@ void TF_motor(void* pvParams) {
     vTaskDelay(pdMS_TO_TICKS(3));
   }
 }
-/*
-void TF_mapPressure(void* pvParams) {
+
+void mapPressure(void* pvParams) {
   MotorControl* motor= (MotorControl*) pvParams;
   for(;;){
     sharedData.pmap[motor->m_zap->presentPosition(ID_NUM)]=sharedData.P_current;
     vTaskDelay(pdMS_TO_TICKS(5));
   }
 }
-*/
