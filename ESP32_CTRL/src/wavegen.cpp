@@ -3,9 +3,9 @@
 #include "sharedData.h"
 
 void WaveGenerator::begin() {
-    pinMode(PWM_PIN,OUTPUT);
+    // pinMode(PWM_PIN,OUTPUT);
     ledcSetup(PWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
-    ledcAttachPin(PWM_PIN, PWM_CHANNEL);
+    // ledcAttachPin(PWM_PIN, PWM_CHANNEL);
     lastCycleStart = millis();
 }
 

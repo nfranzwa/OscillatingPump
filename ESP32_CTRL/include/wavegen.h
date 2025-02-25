@@ -3,7 +3,6 @@
 
 class WaveGenerator {
 private:
-    const int PWM_PIN;
     const int PWM_CHANNEL;
     const int PWM_FREQ;
     const int PWM_RESOLUTION;
@@ -19,8 +18,8 @@ private:
     
     int PWM_value;
 public:
-    WaveGenerator(int pin, int pwm_min, int pwm_max, int channel = 0, int freq = 5000, int res = 12) :
-        PWM_PIN(pin),PWM_min(pwm_min),PWM_max(pwm_max),  PWM_CHANNEL(channel), PWM_FREQ(freq), PWM_RESOLUTION(res) 
+    WaveGenerator(int pwm_min, int pwm_max, int channel = 0, int freq = 5000, int res = 12) :
+        PWM_min(pwm_min),PWM_max(pwm_max),  PWM_CHANNEL(channel), PWM_FREQ(freq), PWM_RESOLUTION(res) 
         {
             ASDR = new int[4]{250,250,250,250};
         }

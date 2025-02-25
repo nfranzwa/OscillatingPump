@@ -21,6 +21,10 @@ bool useLCD     = true;
 #define P_PIN       12 // pressure sensor output pin
 #define P_PIN_NEW   34 // new pressure sensor tested
 #define P_PIN_OUT   2  // pin to output pressure reading to
+// for I2C sensor
+#define P_PIN_SDL 35
+#define P_PIN_SDA 34
+#define I2C_ADDRESS 0x28  // I2C address of the pressure sensor
 
 #define V_SUPPLY    3.3
 #define V_MIN       0.1
@@ -29,10 +33,11 @@ bool useLCD     = true;
 #define P_MAX       10.0 // max pressure sensor output
 #define ADC_RES     4095
 
-#define SCL         36 // S(erial) CL(ock): Display
-#define SDA         33 // S(erial) DA(ta):  Display
+#define SCL         25 // S(erial) CL(ock): Display
+#define SDA         32 // S(erial) DA(ta):  Display
 
-#define PWM_PIN     33 // PWM output pin
+
+
 #define TXD1        18 // ESP serial communication
 #define RXD1        19
 
@@ -50,9 +55,7 @@ bool useLCD     = true;
 #define MAX_POS 4095
 #define MIGHTY_ZAP_RX 16
 #define MIGHTY_ZAP_TX 17
-#define MIGHTY_ZAP_EN 2
-#define ANALOG_PIN 34
-
+#define MIGHTY_ZAP_EN 13
 
 // IDK why Agasthya had this line or left it commented, but it's harmless
 // HardwareSerial mySerial(2);
@@ -60,7 +63,7 @@ bool useLCD     = true;
 // todo: get rid of redundant variables, move to shared struct
 SharedData sharedData;
 String opt_name[] = {"Attack", "Sustain", "Decay", "Rest"};
-int ASDR[4] = {200,1000,800,900};
+int ASDR[4] = {1500,8000,200,500};
 // String opt_name[] = {"1","2","3","4"};
 static constexpr unsigned int LOOP_DELAY=3; // ms
 
@@ -80,17 +83,20 @@ LiquidCrystal_I2C lcd(0x27,20,4);  // set LCD_address: 0x27, num cols: 20, num r
 PhysicalUI ui(CLK,DT,SW);
 PSensor sensor1(P_PIN,"NXP", V_SUPPLY, V_MIN, V_MAX, P_MAX,P_MIN, ADC_RES); 
 PSensor sensor2(P_PIN_NEW,"ABP",V_SUPPLY,V_MIN,V_MAX,P_MAX,P_MIN, ADC_RES);
-WaveGenerator wave(PWM_PIN,sharedData.PWM_min,sharedData.PWM_max);
-MotorControl motor(MIGHTY_ZAP_RX,MIGHTY_ZAP_TX,MIGHTY_ZAP_EN,ANALOG_PIN);
+// PSensor sensor3(P_PIN,"I2C",V_SUPPLY,V_MIN,V_MAX,P_MAX,P_MIN, ADC_RES);
+WaveGenerator wave(sharedData.PWM_min,sharedData.PWM_max);
+MotorControl motor(MIGHTY_ZAP_RX,MIGHTY_ZAP_TX,MIGHTY_ZAP_EN);
 
 void setup() {
     Serial.begin(115200);
     Serial2.begin(32, SERIAL_8N1, MIGHTY_ZAP_RX, MIGHTY_ZAP_TX);
     // WiFi.mode(WIFI_STA);
+    
     pinMode(P_PIN_OUT,OUTPUT); // physical pin out for pressure
-
+    // Wire.begin();
+    // Wire.beginTransmission(I2C_ADDRESS);
     sharedData.PWM_min = 100;
-    sharedData.PWM_max = 2095;
+    sharedData.PWM_max = 4095;
     sharedData.PWM_value= 200;
     memcpy(sharedData.ASDR,ASDR,4*sizeof(int));
     ui.begin();
@@ -110,6 +116,9 @@ void setup() {
     xTaskCreatePinnedToCore(TF_wavegen  ,"Wavegen Task" ,4000, &wave   , 2, &TH_wavegen, 0);
     xTaskCreatePinnedToCore(TF_lcd      ,"LCD Task"     ,4000, &lcd    , 1, &TH_lcd    , 1);
     xTaskCreatePinnedToCore(TF_ui       ,"UI Task"      ,4000, &ui     , 1, &TH_ui     , 0);
+    
+    //TODO: Calibrate motor
+    
     xTaskCreatePinnedToCore(TF_motor    ,"Motor Task"   ,4000, &motor  , 0, &TH_motor   ,0);
 }
 
@@ -120,5 +129,6 @@ void loop() {
         sharedData.PWM_min,sharedData.PWM_max,sharedData.PWM_value
     );
     */
+//    Serial.printf("%f\n",(float) millis());
     vTaskDelay(pdMS_TO_TICKS(10));
 }

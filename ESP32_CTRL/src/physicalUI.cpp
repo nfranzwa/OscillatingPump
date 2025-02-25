@@ -63,14 +63,14 @@ void PhysicalUI::handleEncoder(){
             // Motor will throw a fit if it is running half the time;
             // basically 
             if(sharedData.value_current>=100) {
-                if(sharedData.ASDR[0]+sharedData.ASDR[2]>sharedData.ASDR[1]+sharedData.ASDR[3]){
-                    sharedData.err_msg="SAFETY: ↓A+D or ↑S+R";
-                }
-                else{
-                    optValues[mod(position,optSize)]=sharedData.value_current;
-                    sharedData.ASDR[mod(position,optSize)]= sharedData.value_current;
-                    sharedData.err_msg="";
-                }
+                // if(sharedData.ASDR[0]+sharedData.ASDR[2]>sharedData.ASDR[1]+sharedData.ASDR[3]){
+                //     sharedData.err_msg="SAFETY: ↓A+D or ↑S+R";
+                // }
+                // else{
+                //     sharedData.err_msg="";
+                // }
+                optValues[mod(position,optSize)]=sharedData.value_current;
+                sharedData.ASDR[mod(position,optSize)]= sharedData.value_current;
             }
         }
         else{ //other view modes
@@ -143,8 +143,7 @@ void TF_lcd(void* pvParams){
         lcd->printf("T1:%-4.0f P:%2.2f kPa", (float) sharedData.PWM_value, sharedData.P_current);
         lcd->setCursor(0,3);
         // lcd->scrollDisplayRight();
-        lcd->printf("%s",sharedData.err_msg);
-        lcd->printf("%s","                    ");
+        lcd->printf("%s",(sharedData.err_msg=="")? "                    ":sharedData.err_msg);
         // Serial.printf("T1:%-4.0f P:%-2.2f kPa\n", (float) sharedData.PWM_value, sharedData.P_current);
         // updateLCD(sharedData.P_current,(float) sharedData.PWM_value);
         vTaskDelay(pdMS_TO_TICKS(50));
