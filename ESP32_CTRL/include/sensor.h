@@ -12,6 +12,7 @@ class PSensor {
         const float P_MIN;
         const int ADC_RESOLUTION;
         String SENSOR_TYPE;
+        const int I2C_ADDRESS=0x27;
 
         //filter parameters
         float past_estimate     = 0.0;
@@ -24,6 +25,7 @@ class PSensor {
         void begin();
         float readPressure();
         // float readPressureABP();
+        float maptopsi(int value);
         float filter(float measurement);
         // void sensor_debug(bool debug=false);
 };

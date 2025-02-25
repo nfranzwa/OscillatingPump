@@ -17,13 +17,11 @@ class MotorControl {
         const int MIGHTY_ZAP_RX; //pins
         const int MIGHTY_ZAP_TX; //pins
         const int MIGHTY_ZAP_EN; //pins
-        const int ANALOG_PIN; // sensor analog
-    
     public:
-        MotorControl(int RX, int TX, int EN, int PIN):
-        MIGHTY_ZAP_RX(RX), MIGHTY_ZAP_TX(TX),MIGHTY_ZAP_EN(EN), ANALOG_PIN(PIN) {};
+        MotorControl(int RX, int TX, int EN):
+        MIGHTY_ZAP_RX(RX), MIGHTY_ZAP_TX(TX),MIGHTY_ZAP_EN(EN) {};
         MightyZap* m_zap;
-        
+
         void setMotor(MightyZap* mz){ m_zap=mz;}
         void begin();
         int calculateSpeed(int distance, float freq);
@@ -32,6 +30,7 @@ class MotorControl {
         void updateParameters();
         void readAndPrintSensor();
         void TH_motor(void* pvParams);
+        // void mapPressure();
     };
 
 #endif

@@ -3,9 +3,9 @@
 #include "sharedData.h"
 
 void WaveGenerator::begin() {
-    pinMode(PWM_PIN,OUTPUT);
+    // pinMode(PWM_PIN,OUTPUT);
     ledcSetup(PWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
-    ledcAttachPin(PWM_PIN, PWM_CHANNEL);
+    // ledcAttachPin(PWM_PIN, PWM_CHANNEL);
     lastCycleStart = millis();
 }
 
@@ -41,6 +41,7 @@ void WaveGenerator::updateParams(int* new_asdr,int pwm_min, int pwm_max) {
     memcpy(ASDR,new_asdr,4*sizeof(int));
     PWM_min=pwm_min;
     PWM_max=pwm_max;
+    // sharedData.cyc_period= WaveGenerator::getPeriod();
 }
 
 void WaveGenerator::update(int* ADSR,int min_PWM,int max_PWM,bool debug) {
@@ -61,7 +62,7 @@ void WaveGenerator::update(int* ADSR,int min_PWM,int max_PWM,bool debug) {
     }
     // sharedData.PWM_value = generatePWM();
     if (debug) Serial.printf("PWM:%d\n",sharedData.PWM_value);
-    ledcWrite(PWM_CHANNEL, PWM_value);
+    // ledcWrite(PWM_CHANNEL, PWM_value);
 }
 
 void TF_wavegen(void *pvParameters) {

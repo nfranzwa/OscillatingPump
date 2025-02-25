@@ -37,19 +37,6 @@ void MotorControl::updateParameters() {
   Serial.printf("Updated speed to: %d\n", speed);
 }
 
-void MotorControl::readAndPrintSensor() {
-  int analogValue = analogRead(ANALOG_PIN);
-  float voltage = (analogValue * 3.3) / 4095.0;  // Convert to voltage
-  
-  // Map analog value to pressure (mbar)
-  float pressure_mbar = map(analogValue, 0, 4095, 0, 60);
-  
-  // Convert mbar to PSI (1 mbar = 0.0145038 PSI)
-  float pressure_psi = pressure_mbar * 0.0145038;
-  
-  Serial.printf("Raw: %d, Voltage: %.2fV, Pressure: %.2f mbar (%.3f PSI)\n", 
-                analogValue, voltage, pressure_mbar, pressure_psi);
-}
 
 void MotorControl::begin() {
   // Initialize Serial2 for MightyZap communication
@@ -74,7 +61,17 @@ void TF_motor(void* pvParams) {
   
   for(;;) {
     // Set goal to max position
-    motor->m_zap->GoalPosition(ID_NUM, sharedData.PWM_value);
+    motor->m_zap->GoalPosition(ID_NUM, 4095 - sharedData.PWM_value);
+    // motor->mapPressure();
     vTaskDelay(pdMS_TO_TICKS(3));
   }
 }
+/*
+void TF_mapPressure(void* pvParams) {
+  MotorControl* motor= (MotorControl*) pvParams;
+  for(;;){
+    sharedData.pmap[motor->m_zap->presentPosition(ID_NUM)]=sharedData.P_current;
+    vTaskDelay(pdMS_TO_TICKS(5));
+  }
+}
+*/

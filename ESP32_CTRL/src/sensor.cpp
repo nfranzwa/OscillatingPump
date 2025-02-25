@@ -1,6 +1,7 @@
 #include <sensor.h>
 #include <Arduino.h>
 #include "sharedData.h"
+#include <Wire.h>
 
 void PSensor::begin(){
     analogReadResolution(12); //default 12 bits (0~4095)
@@ -19,9 +20,9 @@ float PSensor::readPressure(){
         The constant value would give a reading of .2 V at P=0 kPa
         
         HOWEVER, following code is run with the transfer function updated as:
-        V_OUT=V_S*(.09*P+0.06) → P = (V_OUT/V_S-.06)/.09
+        V_OUT=V_S*(.09*P+0.05) → P = (V_OUT/V_S-.05)/.09
         */
-       return (voltage/V_SUPPLY -.06)/.09;
+       return (voltage/V_SUPPLY -.05)/.09;
     }
     else if (SENSOR_TYPE=="ABP"){
         /* From datasheet of ABP Analog pressure sensor:
@@ -33,10 +34,33 @@ float PSensor::readPressure(){
         */
        return (voltage-0.1*V_SUPPLY)*(P_MAX-P_MIN)/(.8*V_SUPPLY)+P_MIN;
     }
+    else if (SENSOR_TYPE=="I2C"){
+        int praw=0;
+        Wire.requestFrom(I2C_ADDRESS, 2);
+        if (Wire.available() >= 2) {
+            uint8_t highByte = Wire.read();
+            uint8_t lowByte = Wire.read();
+            praw= (highByte << 8) | lowByte;
+        } else {
+            Serial.println("No data received.");
+        }
+        return maptopsi(praw)*6.89746;
+        
+    }
     else{
         return P_MAX;
     }
     //CONSIDER: adding a constrain() to value
+}
+
+float PSensor::maptopsi(int value){
+    if (value < -16383) value = -16383;
+    if (value > 16383)  value = 16383;
+    // Perform the mapping:
+    // We need to scale from a 32766 range (-16383 to 16383) to a 200 range (-100 to 100)
+    float result = (value / 16383.0) * 100.0;
+    result = result * 0.0145;
+    return result;
 }
 
 float PSensor::filter(float measurement){
