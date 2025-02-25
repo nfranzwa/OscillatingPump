@@ -14,8 +14,13 @@
 HardwareSerial mySerial(2);
 
 
+<<<<<<< HEAD
 const char *ssid = "ESP32";
 const char *password = "ucsdpumpguest";
+=======
+const char *ssid ="";
+const char *password = "";
+>>>>>>> 52c056bb201666429f10eb20ac47cd37ba866b0f
 
 float pressure;
 float oscfreq;

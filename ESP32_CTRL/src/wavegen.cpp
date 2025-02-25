@@ -1,5 +1,6 @@
 #include <wavegen.h>
 #include <Arduino.h>
+#include "sharedData.h"
 
 void WaveGenerator::begin() {
     pinMode(PWM_PIN,OUTPUT);
@@ -58,7 +59,16 @@ void WaveGenerator::update(int* ADSR,int min_PWM,int max_PWM,bool debug) {
         }
         if (valid) updateParams(ADSR,min_PWM,max_PWM);
     }
-    PWM_value = generatePWM();
-    if (debug) Serial.printf("PWM:%d\n",PWM_value);
+    // sharedData.PWM_value = generatePWM();
+    if (debug) Serial.printf("PWM:%d\n",sharedData.PWM_value);
     ledcWrite(PWM_CHANNEL, PWM_value);
+}
+
+void TF_wavegen(void *pvParameters) {
+    WaveGenerator* wave = (WaveGenerator*) pvParameters;
+    for (;;) {
+        wave->update(sharedData.ASDR, sharedData.PWM_min, sharedData.PWM_max);
+        sharedData.PWM_value=wave->generatePWM();
+        vTaskDelay(pdMS_TO_TICKS(5));
+    }
 }

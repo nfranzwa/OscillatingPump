@@ -1,32 +1,12 @@
 #include <physicalUI.h>
 #include <Arduino.h>
+#include "sharedData.h"
 
 void PhysicalUI::begin() {
     pinMode(CLK, INPUT);
     pinMode(DT, INPUT);
     pinMode(SW, INPUT_PULLUP);
     last_s_CLK = digitalRead(CLK);
-
-    xTaskCreatePinnedToCore(
-        lcdTask,   //task funct
-        "LCD_task",    //task name
-        4096,           //stack size
-        this,           //task parameter
-        1,              //task priority
-        &lcd_TH,         //handle for tracking task
-        0               //pin task to core #
-    );
-    // delay(100);
-    xTaskCreatePinnedToCore(
-        encoderTask,   //task funct
-        "encoder_task",    //task name
-        4096,           //stack size
-        this,           //task parameter
-        1,              //task priority
-        &encoder_TH,         //handle for tracking task
-        1               //pin task to core #
-    );
-    // delay(100);
 }
 
 void PhysicalUI::setOptions(int* values, String* names, int inc) {
@@ -37,27 +17,63 @@ void PhysicalUI::setOptions(int* values, String* names, int inc) {
 }
 
 void PhysicalUI::handleButton(){
-    int btn_state = digitalRead(SW);
-    if (btn_state == LOW) {
-        if (millis() - lastButtonPress > CLICK_DELAY) {
-            view_mode= (view_mode++) % NUM_VIEW_MODES;
-            Serial.printf("%s:%s\n", 
-                         (getViewMode()=="EDIT") ? "EDIT" : "SAVED",
-                         optNames[mod(position, optSize)].c_str());
+    // int btn_state=digitalRead(SW)
+    // if button state changes from previous stored
+    if(btn_state!=digitalRead(SW)){
+        //button is pushed
+        if(btn_state==LOW) lastButtonPress=millis(); //start tracking time of press
+        //button is released
+        else {
+            //revert mode to previous
+            if(press_length>DEBOUNCE_DELAY && press_length<MAX_BTN_CLICK){
+                view_mode = (view_mode + 1) % NUM_VIEW_MODES;
+                // Serial.printf("CYCLE\t", sharedData.mode_current.c_str());
+            }
+            sharedData.mode_current=getViewMode();
+            // Serial.printf("BTN released, %s\n",sharedData.mode_current);
         }
-        lastButtonPress = millis();
+    } else{ // button is same as before
+        //if held down
+        if(btn_state==LOW){
+            press_length=millis()-lastButtonPress;
+            //evaluate how long its been down
+            if((int) press_length >MAX_BTN_CLICK){
+                //it is being held
+                sharedData.mode_current="EDIT";
+            }
+        }
+        //resting up
     }
+    btn_state=digitalRead(SW);
 }
 
 void PhysicalUI::handleEncoder(){
     s_CLK = digitalRead(CLK);
     // detect a pulse/change
     if (s_CLK != last_s_CLK && s_CLK == 1) {
-        if (digitalRead(DT) != s_CLK) {
-            (getViewMode()=="EDIT") ? optValues[mod(position,optSize)]-=increment : position--;
-        } else {
-            (getViewMode()=="EDIT") ? optValues[mod(position,optSize)]+=increment : position++;
+        //Edit mode: modify current param values
+        if (sharedData.mode_current=="EDIT"){
+            if (digitalRead(DT) != s_CLK) {
+                sharedData.value_current-=increment;
+            } else {
+                sharedData.value_current+=increment;
+                // (sharedData.mode_current=="EDIT") ? optValues[mod(position,optSize)]+=increment : position++;
+            }
+            // only update the value if it is within safe threshold
+            // Motor will throw a fit if it is running half the time;
+            // basically 
+            if(sharedData.value_current>=100) {
+                optValues[mod(position,optSize)]=sharedData.value_current;
+                sharedData.ASDR[mod(position,optSize)]= sharedData.value_current;
+            }
         }
+        else{ //other view modes
+            // cycle through parameters
+            (digitalRead(DT)!=s_CLK) ? position-- : position++;
+            
+        }
+        sharedData.param_current = optNames[mod(position, optSize)];
+        sharedData.value_current = optValues[mod(position, optSize)];
     }
     last_s_CLK = s_CLK; // remember last clk state
 }
@@ -85,7 +101,7 @@ void PhysicalUI::updateLCD(float pressure, float target,bool debug){
     lcd->setCursor(0,1);
     lcd->printf("%-7s:%5d ms", getCurrentName().c_str(), getCurrentValue());
     lcd->setCursor(0,2);
-    lcd->printf("T1:%-4.0f P:%-2.2f kPa",target,pressure);
+    lcd->printf("T1:%-4.0f P:%-3.2f kPa",target,pressure);
     lastLCDUpdate=millis();
     //TODO: Error message/instructions
 
@@ -97,25 +113,29 @@ void PhysicalUI::updateLCD(float pressure, float target,bool debug){
     */
 }
 
-
-void PhysicalUI::encoderTask(void* parameter) {
-    /*  These are static task handlers, owned by the class
-        The principle is to run this task on one core, 
-        and have this code constantly running
-    */
-    PhysicalUI* ui = (PhysicalUI*) parameter;
-    
-    for(;;) {
-        ui->handleEncoder();
-        ui->handleButton();
-        delay(DEBOUNCE_DELAY);
+void TF_ui(void* pvParams){
+    PhysicalUI* ui= (PhysicalUI*) pvParams;
+    for(;;){
+        ui->update();
+        sharedData.mode_current=ui->getViewMode();
+        sharedData.param_current=ui->getCurrentName();
+        sharedData.value_current=ui->getCurrentValue();
+        //Serial.printf("%s: %s\t%d\n",sharedData.mode_current,sharedData.param_current,sharedData.value_current);
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
 
-void PhysicalUI::lcdTask(void* parameter) {
-    PhysicalUI* ui = (PhysicalUI*) parameter;
-    for (;;) {
-        ui->updateLCD(0.0, 0.0, false); // Update with actual pressure and target values
-        delay(LCD_UPDATE_INTERVAL);
+void TF_lcd(void* pvParams){
+    LiquidCrystal_I2C* lcd=(LiquidCrystal_I2C*) pvParams;
+    for(;;){
+        lcd->setCursor(0, 0);
+        lcd->printf("MODE:%-4s", sharedData.mode_current.c_str());
+        lcd->setCursor(0, 1);
+        lcd->printf("%-7s:%5d ms", sharedData.param_current.c_str(), sharedData.value_current);
+        lcd->setCursor(0, 2);
+        lcd->printf("T1:%-4.0f P:%-2.2f kPa", (float) sharedData.PWM_value, sharedData.P_current);
+        // Serial.printf("T1:%-4.0f P:%-2.2f kPa\n", (float) sharedData.PWM_value, sharedData.P_current);
+        // updateLCD(sharedData.P_current,(float) sharedData.PWM_value);
+        vTaskDelay(pdMS_TO_TICKS(50));
     }
 }

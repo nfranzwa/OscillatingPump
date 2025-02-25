@@ -1,8 +1,8 @@
+#!/usr/bin/env python3
 import requests
 from datetime import datetime
 import csv
 import os
-from win32com.client import Dispatch
 url_record = "http://192.168.1.85/record"
 url_read = "http://192.168.1.85/readings"
 firsthit = 0
@@ -14,24 +14,6 @@ headers.update(
 )
 print("here")
 counter = 0
-def create_shortcut(folder_path,shortcut_name):
-    if not os.path.exists(folder_path):
-        print("error")
-        return
-    desktop = os.path.join(os.environ["USERPROFILE"],"Desktop")
-    shortcut_path = os.path.join(desktop, f"{shortcut_name}.lnk")
-
-    # Create the shortcut
-    shell = Dispatch('WScript.Shell')
-    shortcut = shell.CreateShortcut(shortcut_path)
-    shortcut.TargetPath = folder_path  # Set target to the folder
-    shortcut.WorkingDirectory = folder_path  # Set working directory
-    shortcut.IconLocation = r"C:\Windows\System32\shell32.dll,3"  # Optional: Folder icon
-    shortcut.Save()
-
-    print(f"Shortcut successfully created: {shortcut_path}")
-
-folder_to_shortcut = os.path.join(os.environ["USERPROFILE"],"Documents","156testingcsv\dist\writetocsv\data")
 
 while True:
 
@@ -50,7 +32,6 @@ while True:
             counterstr = str(counter)
             if not os.path.exists("data"):
                 os.makedirs("data")
-                create_shortcut(folder_to_shortcut,"Data")
             filename = "data/data"+counterstr+".csv"
             with open(filename, "w", newline="") as csvfile:
                     fieldnames = ['Time', 'Pressure', 'Oscillation Frequency', 'Sustain Time']
