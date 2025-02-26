@@ -18,10 +18,9 @@ struct SharedData {
     int value_current;      // Current value of the parameter
     String err_msg="";
     float pmap[4095];       // pressure mapped onto each position
-
+    bool calibration_state = 0;
     float P_min;
     float P_max;
-    
     float web_A;
     float web_sustain;
 };
@@ -63,6 +62,7 @@ extern SharedData sharedData;  // Declare the global instance of SharedData
 #define DRIFT_SAMPLES 10       // Number of samples to check for drift
 
 // motor control
+
 constexpr int ID_NUM = 1;
 constexpr int MIN_POS= 100;
 constexpr int MAX_POS= 4095;
