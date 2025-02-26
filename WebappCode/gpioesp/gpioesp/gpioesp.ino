@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include <Wire.h>
 
+
 #define TXD1 18
 #define RXD1 19
 
@@ -31,7 +32,7 @@ float susttime;
 
 int lcdColumns = 20;
 int lcdRows = 4;
-LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);
+//LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);
 String success;
 long zeroOffset = 8290303;
 bool isCalibrated = false;
@@ -46,35 +47,6 @@ int stableSampleCount = 0;
 const int inputpin = 15;
 const int outputpin = 2;
 
-
-void checkAndUpdateZero(long rawPressure, float currentPSI) {
-  // Check if current pressure is close to zero
-  if (abs(currentPSI - 1) < DRIFT_THRESHOLD) {  // Remember we're applying -1 offset to PSI
-    if (!isStable) {
-      // Start tracking stable period
-      isStable = true;
-      stableStartTime = millis();
-      stableSampleCount = 1;
-    } else {
-      stableSampleCount++;
-
-      // Check if we've been stable long enough and have enough samples
-      if (stableSampleCount >= DRIFT_SAMPLES && (millis() - stableStartTime) >= STABLE_TIME) {
-        // Update zero offset
-        zeroOffset = rawPressure;
-        stableSampleCount = 0;
-        isStable = false;
-      }
-    }
-  } else {
-    // Reset stable tracking if pressure is not near zero
-    isStable = false;
-    stableSampleCount = 0;
-  }
-}
-float convertToPSI(long rawValue, long zero) {
-  return (float)(rawValue - zero) / COUNTS_PER_PSI;
-}
 
 String readPressureRaw() {
   int pressure_raw = 0;
@@ -112,7 +84,7 @@ void setup() {
 
     digitalWrite(outputpin, LOW);
   }
-  lcd.init();
+  /* lcd.init();
   lcd.backlight();
   lcd.setCursor(0, 0);
   lcd.print("Press. |");
@@ -137,13 +109,14 @@ void setup() {
   lcd.setCursor(10, 3);
   lcd.print("Hz");
   lcd.setCursor(17, 3);
-  lcd.print("s");
+  lcd.print("s"); */
 }
 
 void loop() {
   String pressuredata = readPressureRaw();
   float presslider = pressuredata.toFloat();
   float pressuresensor = round(presslider * 100) / 100;
+  Serial.println(pressuredata);
   if (mySerial.available()) {
     // Read data and display it
     String message = mySerial.readStringUntil('\n');
@@ -156,12 +129,12 @@ void loop() {
     if (token != NULL) oscfreq = atoi(token);
     token = strtok(NULL, ",");
     if (token != NULL) susttime = atoi(token);
-    lcd.setCursor(0, 2);
+    /* lcd.setCursor(0, 2);
     lcd.print(pressuresensor);
     lcd.setCursor(10, 2);
     lcd.print(oscfreq);
     lcd.setCursor(16, 2);
-    lcd.print(susttime);
+    lcd.print(susttime); */
   }
 
   mySerial.println(pressuresensor);
