@@ -7,22 +7,31 @@
 struct SharedData {
     float P_current;        // Current pressure reading
     float P_target;         // Target pressure
+/*
+  WARNING: Know that increasing PWM values corresponds with minimizing pressure.
+  For the sake of convention + retained understanding, we do the flip when
+  - sending information to the motor.
+  - updating the values of targets
+*/
     int PWM_value;          // Current PWM value
     int ASDR[4];            // ASDR values (Attack, Sustain, Decay, Rest)
     int cyc_period;         // cycle period in mss
-    int PWM_max;            // Maximum PWM value
-    int PWM_min;            // Minimum PWM value
+    int PWM_max=4095;            // Maximum PWM value
+    int PWM_min=100;            // Minimum PWM value
     float PID[3];           // PID coefficients
     String mode_current;    // Current mode
     String param_current;   // Current parameter being edited
     int value_current;      // Current value of the parameter
     String err_msg="";
-    float pmap[4095];       // pressure mapped onto each position
+    // if the values are negative 1 then it means the values were not initialized.
+    // pressure mapped onto each position
+    float pmap[4095]={-1.0};
     bool calibration_state = 0;
-    float P_min;
-    float P_max;
-    float web_A;
-    float web_sustain;
+    float P_min = 0.3;
+    float P_max = 5.0;
+    //pwm min and max values obtained from calibration
+    float PWM_c_min;
+    float PWM_c_max;
 };
 
 extern SharedData sharedData;  // Declare the global instance of SharedData
