@@ -11,7 +11,7 @@ class MotorControl {
         unsigned long cycleStartTime;
         const float DUTY_CYCLE = 0.4;
     
-        const int ID_NUM    = 0; //actuator number (for multiple actuators)
+        const int ID_NUM    = 1; //actuator number (for multiple actuators)
         int MIN_POS         =100; //actuator position min and max
         int MAX_POS         =4095; //actually will be defined by user
         const int MIGHTY_ZAP_RX; //pins

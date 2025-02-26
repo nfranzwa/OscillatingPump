@@ -19,8 +19,10 @@ struct SharedData {
     String err_msg="";
     float pmap[4095];       // pressure mapped onto each position
 
-    float web_P;
-    float web_freq;
+    float P_min;
+    float P_max;
+    
+    float web_A;
     float web_sustain;
 };
 
@@ -61,14 +63,12 @@ extern SharedData sharedData;  // Declare the global instance of SharedData
 #define DRIFT_SAMPLES 10       // Number of samples to check for drift
 
 // motor control
-#define ID_NUM 1
-#define MIN_POS 100
-#define MAX_POS 4095
-#define MIGHTY_ZAP_RX 16
-#define MIGHTY_ZAP_TX 17
-#define MIGHTY_ZAP_EN 13
-
-
-#define LOOP_DELAY 3
+constexpr int ID_NUM = 1;
+constexpr int MIN_POS= 100;
+constexpr int MAX_POS= 4095;
+constexpr int MIGHTY_ZAP_RX= 16;
+constexpr int MIGHTY_ZAP_TX= 17;
+constexpr int MIGHTY_ZAP_EN= 13;
+constexpr int LOOP_DELAY = 3;
 
 #endif

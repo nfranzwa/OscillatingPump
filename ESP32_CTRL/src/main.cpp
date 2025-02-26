@@ -21,15 +21,16 @@ int ASDR[4] = {1500,8000,200,500};
 // String opt_name[] = {"1","2","3","4"};
 
 //task handles
-TaskHandle_t TH_sensor, TH_wavegen, TH_lcd, TH_ui, TH_motor=nullptr;
+TaskHandle_t TH_sensor, TH_wavegen, TH_lcd, TH_ui, TH_motor,TH_pmap=nullptr;
 // task funct prototypes
 void TF_sensor(void *pvParams);
 void TF_wavegen(void *pvParams);
 void TF_ui(void *pvParams);
 void TF_lcd(void *pvParams);
 void TF_motor(void *pvParams);
+void mapPressure(void *pvParams);
 
-HardwareSerial Serial2(2);
+// HardwareSerial Serial2(2);
 HardwareSerial SerialWeb(1);
 MightyZap m_zap(&Serial2, MIGHTY_ZAP_EN, 1);
 
@@ -83,7 +84,9 @@ void setup() {
     xTaskCreatePinnedToCore(TF_ui       ,"UI Task"      ,4000, &ui     , 1, &TH_ui     , 0);
     
     //TODO: Calibrate       motor
-    motor.mapPressure();
+    /*
+    xTaskCreatePinnedToCore(mapPressure    ,"PMap Task"   ,2000, &motor  , 0, &TH_pmap   ,0);
+    */
     xTaskCreatePinnedToCore(TF_motor    ,"Motor Task"   ,4000, &motor  , 0, &TH_motor   ,0);
 }
 
@@ -101,12 +104,25 @@ void loop() {
         char inputArray[msg.length() + 1];  // Create a char array of the correct size
         msg.toCharArray(inputArray, sizeof(inputArray));
         char *token = strtok(inputArray, ",");
-        if (token != NULL) sharedData.web_P = atoi(token);
+        if (token != NULL) sharedData.P_min = atoi(token);
         token = strtok(NULL, ",");
-        if (token != NULL) sharedData.web_freq = atoi(token);
+        if (token != NULL) sharedData.P_max = atoi(token);
         token = strtok(NULL, ",");
-        if (token != NULL) sharedData.web_sustain= atoi(token);
-        Serial.printf("Web P:%-3.3f Web_freq:%-3.3f Web sustain%-3.3f\n");
+        // Sustain
+        if (token != NULL) sharedData.ASDR[1] = atoi(token);
+        token = strtok(NULL, ",");
+        // Rest
+        if (token != NULL) sharedData.ASDR[3] = atoi(token);
+        token = strtok(NULL, ",");
+        // Attack and Decay
+        if (token != NULL){
+            sharedData.ASDR[0]= atoi(token);
+            sharedData.ASDR[2]= sharedData.ASDR[0];
+        }
+
+        Serial.printf("Pmin%-2.2f Pmax%-2.2f A/D:%d S:%d R%d\n",
+            sharedData.P_min,sharedData.P_max,sharedData.ASDR[0],sharedData.ASDR[1],sharedData.ASDR[3]);
+
     }
     vTaskDelay(pdMS_TO_TICKS(10));
 }
