@@ -79,14 +79,14 @@ void setup() {
     
     // create tasks
     xTaskCreatePinnedToCore(TF_sensor   ,"Sensor Task"  ,4000, &sensor1, 1, &TH_sensor , 0);
-    xTaskCreatePinnedToCore(TF_wavegen  ,"Wavegen Task" ,4000, &wave   , 2, &TH_wavegen, 0);
     xTaskCreatePinnedToCore(TF_lcd      ,"LCD Task"     ,4000, &lcd    , 1, &TH_lcd    , 1);
+    xTaskCreatePinnedToCore(TF_wavegen  ,"Wavegen Task" ,4000, &wave   , 2, &TH_wavegen, 0);
     xTaskCreatePinnedToCore(TF_ui       ,"UI Task"      ,4000, &ui     , 1, &TH_ui     , 0);
-    
-    //TODO: Calibrate       motor
-    /*
-    xTaskCreatePinnedToCore(mapPressure    ,"PMap Task"   ,2000, &motor  , 0, &TH_pmap   ,0);
-    */
+    //choose whether we want to update pressure map continuously or not;
+    // we can't guarantee that regular usage will have monotonic pressure at the sensor position
+    // xTaskCreatePinnedToCore(mapPressure ,"PMap Task"    ,2000, &motor  , 0, &TH_pmap   , 0);
+    //TODO: Add user input to trigger calibration
+    motor.calibrate(1);
     xTaskCreatePinnedToCore(TF_motor    ,"Motor Task"   ,4000, &motor  , 0, &TH_motor   ,0);
 }
 
