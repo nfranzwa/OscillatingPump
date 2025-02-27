@@ -12,22 +12,22 @@ function changeValues(button, step) {
   xhr.send();
 
 }
-document.getElementById("position-slider").addEventListener("input", function() {
+document.getElementById("position-slider").addEventListener("input", function () {
   let sliderValue = this.value; // Get the current slider value
   editslider(sliderValue); // Send it via XMLHttpRequest
 });
-function editslider(value){
+function editslider(value) {
   var xhr = new XMLHttpRequest();
-  let url = "/position?value="+value;
-  xhr.open("GET",url,true);
+  let url = "/position?value=" + value;
+  xhr.open("GET", url, true);
   xhr.send();
 }
 const pressureData = [];
+let calibrationstate = 0;
 let isRecording = false;
 let isCalibrated = 0;
 let hasrecorded = false;
 //const recordMsg = document.getElementById("record-message");
-
 function toggleRecording(element) {
   hasrecorded = true;
   isRecording = !isRecording;
@@ -53,21 +53,38 @@ function toggleRecording(element) {
   xhr.send();
 }
 
-function calibrating(button) {
+document.getElementById("modeToggle").addEventListener("change", function () {
+  if (this.checked) {
+    var path = "/calibration?value=3";
 
-  isCalibrated = !isCalibrated;
-  
-  if (isCalibrated){
+  } else {
+    var path = "/calibration?value=0";
 
   }
-  document.getElementById('record-button').disabled = false;
-  document.getElementById('standby-button').disabled = false;
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", path, true);
+  xhr.send();
+});
 
- 
+function calibrating(button) {
+  var path = "/calibration?value=1";
+  var xhr = new XMLHttpRequest;
+  xhr.open("GET", path, true);
+  xhr.send();
+
+
+
+
 }
 
 function standby(element) {
 
+}
+
+
+
+function updatecalibr(newValue) {
+  calibrationstate = newValue;
 }
 function updateChart(newValue) {
   pressureData.push(parseFloat(newValue)); // Ensure numerical values
@@ -136,7 +153,30 @@ if (!!window.EventSource) {
   }, false);
 
   source.addEventListener('pressure', function (e) {
-
     updateChart(e.data);
   }, false);
+
+  source.addEventListener('calstate', function (e) {
+    calibrationstate = e.data;
+    const calibrationMessage = document.getElementById('calibration-message');F
+    if (calibrationstate == 0 || calibrationstate == 1 || calibrationstate == 3) {
+      document.getElementById('record-button').disabled = true;
+      document.getElementById('standby-button').disabled = true;
+    } else if (calibrationstate == 2) {
+      document.getElementById('record-button').disabled = false;
+      document.getElementById('standby-button').disabled = false;
+    }
+    if (calibrationstate == 3){
+      document.getElementById('calibration-button').disabled = true;
+    } else{
+      document.getElementById('calibration-button').disabled = false;
+    }
+
+    if (calibrationstate == 1) {
+    calibrationMessage.textContent = "Calibrating! Please Wait";
+    calibrationMessage.classList.remove("hidden");
+  } else {
+    calibrationMessage.classList.add("hidden");
+  }
+  });
 } 

@@ -207,22 +207,21 @@ void loop() {
   float SustValfloat = sustVal.toFloat();
   float MaxPresValfloat = maxpresVal.toFloat();
   float resttimefloat = resttime.toFloat();
-  float calibrationfloat = calibrationstate.toFloat();
-  float desiredposfloat = desiredpos.toFloat();
-
+  int calibrationfloat = calibrationstate.toInt();
+  int desiredposfloat = desiredpos.toInt();
 
   if (mySerial.available()) {
     // Read data and display it
     String message = mySerial.readStringUntil('\n');
     Serial.println("Received: " + message);
-    sensorpres = message;
+    char inputArray[message.length() + 1];  
+    message.toCharArray(inputArray, sizeof(inputArray));
+    char *token = strtok(inputArray, ",");
+    if (token != NULL) sensorpres = atoi(token);
+    token = strtok(NULL, ",");
+    if (token != NULL) calibrationstate = atoi(token);
     server.on("/readings", HTTP_GET, [=](AsyncWebServerRequest *request) {
       String json = sensorpres + "," + String(attacktimefloat) + "," + String(SustValfloat) + "," + String(resttimefloat);
-      request->send_P(200, "text/plain", json.c_str());
-      json = String();
-    });
-    server.on("/calstate", HTTP_GET, [](AsyncWebServerRequest *request) {
-      String json = calibrationstate;
       request->send_P(200, "text/plain", json.c_str());
       json = String();
     });
@@ -230,6 +229,7 @@ void loop() {
       // Send Events to the client with the Sensor Readings Every 10 seconds
       events.send("ping", NULL, millis());
       events.send(sensorpres.c_str(), "pressure", millis());
+      events.send(calibrationstate.c_str(),"calstate",millis());
       lastTime = millis();
     }
   }
@@ -239,11 +239,11 @@ void loop() {
   mySerial.print(", ");
   mySerial.print(MaxPresValfloat);
   mySerial.print(", ");
-  mySerial.print(attacktimefloat);
-  mySerial.print(", ");
   mySerial.print(SustValfloat);
   mySerial.print(", ");
   mySerial.print(resttimefloat);
+  mySerial.print(", ");
+  mySerial.print(attacktimefloat);
   mySerial.print(", ");
   mySerial.print(calibrationfloat);
   mySerial.print(", ");

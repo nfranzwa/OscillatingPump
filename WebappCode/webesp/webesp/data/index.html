@@ -4,7 +4,7 @@
 <head>
   <title>Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="/styles5.css">
+  <link rel="stylesheet" href="/styles6.css">
   <script src="node_modules/chart.js/dist/chart.umd.js"></script>
 </head>
 
@@ -87,14 +87,20 @@
     <div class="calibration-button-container">
       <button onclick="calibrating(this)" class="calibration-button" id="calibration-button">Calibrate</button>
     </div>
-    <div id="calibration-message" class="hidden"></div>
+    <div id="calibration-message" class="hidden message">Calibration message</div>
     <div class="standby-button-container">
       <button onclick="standby(this)" class="standby-button" id="standby-button" disabled>Standby Mode</button>
     </div>
-    <div id="calibration-message" class="hidden message">Calibration message</div>
   </div>
 
-
+  <div class="toggle-container">
+    <span>Automatic</span>
+    <label class="toggle-switch">
+      <input type="checkbox" id="modeToggle">
+      <span class="slider"></span>
+    </label>
+    <span>Manual</span>
+  </div>
 
   <div class="slider-container">
     <div class="slider-title">Position Control</div>
@@ -107,7 +113,7 @@
       <span>0</span>
     </div>
   </div>
-  <script src="script6.js"></script>
+  <script src="script7.js"></script>
 </body>
 
 </html>
