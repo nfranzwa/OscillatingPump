@@ -26,12 +26,19 @@ struct SharedData {
     // if the values are negative 1 then it means the values were not initialized.
     // pressure mapped onto each position
     float pmap[4095]={-1.0};
-    bool calibration_state = 0;
+    /* Calibration States:
+        0 - not calibrated
+        1 - running calibration
+        2 - calibration finished
+        3 - running manual 
+    */
+    int calibration_state = 0;
     float P_min = 0.3;
     float P_max = 5.0;
     //pwm min and max values obtained from calibration
     float PWM_c_min;
     float PWM_c_max;
+    int manualPWM;
 };
 
 extern SharedData sharedData;  // Declare the global instance of SharedData
