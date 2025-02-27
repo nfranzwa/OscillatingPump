@@ -21,14 +21,14 @@ int ASDR[4] = {1500,8000,200,500};
 // String opt_name[] = {"1","2","3","4"};
 
 //task handles
-TaskHandle_t TH_sensor, TH_wavegen, TH_lcd, TH_ui, TH_motor,TH_pmap=nullptr;
+TaskHandle_t TH_sensor, TH_wavegen, TH_lcd, TH_ui, TH_motor,TH_calibrate,TH_talk2Web=nullptr;
 // task funct prototypes
 void TF_sensor(void *pvParams);
 void TF_wavegen(void *pvParams);
 void TF_ui(void *pvParams);
 void TF_lcd(void *pvParams);
 void TF_motor(void *pvParams);
-void mapPressure(void *pvParams);
+void TF_calibrate(void *pvParams);
 
 // HardwareSerial Serial2(2);
 HardwareSerial SerialWeb(1);
@@ -84,10 +84,11 @@ void setup() {
     xTaskCreatePinnedToCore(TF_ui       ,"UI Task"      ,4000, &ui     , 1, &TH_ui     , 0);
     //choose whether we want to update pressure map continuously or not;
     // we can't guarantee that regular usage will have monotonic pressure at the sensor position
-    // xTaskCreatePinnedToCore(mapPressure ,"PMap Task"    ,2000, &motor  , 0, &TH_pmap   , 0);
+    xTaskCreatePinnedToCore(TF_talk2Web ,"Web comm Task",4000, nullptr , 1, &TH_talk2Web,0);
+    
+    xTaskCreatePinnedToCore(TF_calibrate,"Calibrate Task",4000,&motor  , 0, &TH_calibrate,0);
     //TODO: Add user input to trigger calibration
-    motor.calibrate(1);
-    xTaskCreatePinnedToCore(TF_motor    ,"Motor Task"   ,4000, &motor  , 0, &TH_motor   ,0);
+    xTaskCreatePinnedToCore(TF_motor    ,"Motor Task"   ,4000, &motor  , 0, &TH_motor   , 0);
 }
 
 void loop() {
@@ -119,10 +120,18 @@ void loop() {
             sharedData.ASDR[0]= atoi(token);
             sharedData.ASDR[2]= sharedData.ASDR[0];
         }
-
+        if (token != NULL) sharedData.calibration_state = atoi(token);
+        token = strtok(NULL, ",");
+        if (token != NULL) sharedData.manualPWM = atoi(token);
+        token = strtok(NULL, ",");
+        
         Serial.printf("Pmin%-2.2f Pmax%-2.2f A/D:%d S:%d R%d\n",
             sharedData.P_min,sharedData.P_max,sharedData.ASDR[0],sharedData.ASDR[1],sharedData.ASDR[3]);
-
     }
     vTaskDelay(pdMS_TO_TICKS(10));
+}
+
+void TF_talk2Web (void* pvParams){
+    SerialWeb.printf("%2.1f,%d\n",sharedData.P_current,sharedData.calibration_state);
+    vTaskDelay(pdMS_TO_TICKS(100));
 }

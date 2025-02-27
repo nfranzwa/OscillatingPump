@@ -11,17 +11,6 @@ unsigned long lastSensorRead = 0; // For timing sensor readings
 unsigned long cycleStartTime = 0; // For tracking cycle timing
 const float DUTY_CYCLE = 0.4;     // 40% duty cycle
 
-void MotorControl::calibrate(int state)
-{
-  if (state == 0)
-  {
-    state = 1;
-  }
-  else if (state == 1)
-  {
-    m_zap->GoalPosition(ID_NUM,0);
-  }
-}
 // Calculate speed needed for symmetric movement within duty cycle
 int MotorControl::calculateSpeed(int distance, float freq)
 {
@@ -65,43 +54,6 @@ void MotorControl::begin()
   Serial.printf("Initial position: %d\n", currentPos);
 }
 
-/*
-calibrate pressure mappings and motor
-this means remembering
-- starting PWM position for 1 atm
-- positions for up to max pressure
-*/
-void MotorControl::calibrate(int state){
-  //set move speed to be very very slow
-  Serial.println("Starting calibration, Detach Pump\n");
-  delay(800);
-  m_zap->GoalPosition(3000);
-  m_zap->GoalSpeed(ID_NUM,10);
-  Serial.println("Reattach Pump\n");
-  delay(2000);
-  //first move down until slightly below 0.1 KPa
-  /*
-  WARNING: Know that increasing PWM values corresponds with minimizing pressure.
-  For the sake of convention + retained understanding, we do the flip when
-  - sending information to the motor.
-  - updating the values of targets
-  */
-  while(sharedData.P_current>sharedData.P_min){
-    m_zap->GoalPosition(ID_NUM,4095-sharedData.PWM_min);
-  }
-  sharedData.PWM_c_min=4095-m_zap->presentPosition(ID_NUM);
-  //start mapping, and then move until it hits max desired pressure
-  while(sharedData.P_current<sharedData.P_max){
-    m_zap->GoalPosition(ID_NUM,sharedData.PWM_max);
-    sharedData.pmap[m_zap->presentPosition(ID_NUM)] = sharedData.P_current;
-  }
-  sharedData.PWM_c_max=4095-m_zap->presentPosition(ID_NUM);
-  
-  //reset move speed to default? max is 1023
-  m_zap->GoalSpeed(ID_NUM,500);
-  m_zap->GoalPosition(ID_NUM,4095-sharedData.PWM_c_min);
-}
-
 // as long as the target pressure is within the calibration range, run a binary search
 // WARNING: binary search assumes the values sorted (aka monotonic)
 int mapPos(float P_target) {
@@ -143,6 +95,50 @@ int mapPos(float P_target) {
 //TODO ? maybe not necessary
 void resetMap(){
   // memcpy(sharedData.pmap, something to change it to)
+}
+
+/*
+calibrate pressure mappings and motor
+this means remembering
+- starting PWM position for 1 atm
+- positions for up to max pressure
+*/
+void TF_calibrate(void* pvParams){
+  MotorControl* motor = (MotorControl*) pvParams;
+  //set move speed to be very very slow
+  for(;;){
+    if(sharedData.calibration_state==1){
+      Serial.println("Starting calibration, Detach Pump\n");
+      vTaskDelay(pdMS_TO_TICKS(800));
+      motor->m_zap->GoalPosition(3000);
+      motor->m_zap->GoalSpeed(ID_NUM,10);
+      Serial.println("Reattach Pump\n");
+      vTaskDelay(pdMS_TO_TICKS(1500));
+      //first move down until slightly below 0.1 KPa
+      /*
+      WARNING: Know that increasing PWM values corresponds with minimizing pressure.
+      For the sake of convention + retained understanding, we do the flip when
+      - sending information to the motor.
+      - updating the values of targets
+      */
+      while(sharedData.P_current>sharedData.P_min){
+        motor->m_zap->GoalPosition(ID_NUM,4095-sharedData.PWM_min);
+      }
+      sharedData.PWM_c_min=4095-motor->m_zap->presentPosition(ID_NUM);
+      //start mapping, and then move until it hits max desired pressure
+      while(sharedData.P_current<sharedData.P_max){
+        motor->m_zap->GoalPosition(ID_NUM,sharedData.PWM_max);
+        sharedData.pmap[motor->m_zap->presentPosition(ID_NUM)] = sharedData.P_current;
+      }
+      sharedData.PWM_c_max=4095-motor->m_zap->presentPosition(ID_NUM);
+      
+      //reset move speed to default? max is 1023
+      motor->m_zap->GoalSpeed(ID_NUM,500);
+      motor->m_zap->GoalPosition(ID_NUM,4095-sharedData.PWM_c_min);
+      sharedData.calibration_state=2;
+    }
+    vTaskDelay(pdMS_TO_TICKS(20));
+  }
 }
 
 void TF_motor(void* pvParams){
