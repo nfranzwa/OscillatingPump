@@ -1,6 +1,7 @@
 window.addEventListener('load', getReadings);
 
 function changeValues(button, step) {
+
   let input = button.parentElement.querySelector("input"); // Get the input field inside the same .input-group
   let name = input.getAttribute("name"); // Get the name attribute of the input
   let newValue = Math.min(Math.max(parseInt(input.value) + step, 0), 30); // Ensure value stays in range
@@ -10,6 +11,16 @@ function changeValues(button, step) {
   xhr.open("GET", name2 + newValue, true);
   xhr.send();
 
+}
+document.getElementById("position-slider").addEventListener("input", function() {
+  let sliderValue = this.value; // Get the current slider value
+  editslider(sliderValue); // Send it via XMLHttpRequest
+});
+function editslider(value){
+  var xhr = new XMLHttpRequest();
+  let url = "/position?value="+value;
+  xhr.open("GET",url,true);
+  xhr.send();
 }
 const pressureData = [];
 let isRecording = false;

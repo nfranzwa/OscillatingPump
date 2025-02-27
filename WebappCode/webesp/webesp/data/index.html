@@ -4,7 +4,7 @@
 <head>
   <title>Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="/styles4.css">
+  <link rel="stylesheet" href="/styles5.css">
   <script src="node_modules/chart.js/dist/chart.umd.js"></script>
 </head>
 
@@ -24,26 +24,39 @@
 
 
   <div class="input-group">
+
     <div class="input-container">
-      <label for="PressureInput">Pressure (cmH20)</label>
+      <label for="MinPressureInput">Minimum Pressure (cmH20)</label>
       <div class="input-wrapper">
         <button onclick="changeValues(this,-1)" class="minus-btn">-</button>
-        <input type="number" name="Pressure" id="PressureInput" min="0" max="30" value="0" step="1"
+        <input type="number" name="MinPressure" id="MinPressureInput" min="0" max="30" value="0" step="1"
           style="width: 100px;  text-align: center;">
         <button onclick="changeValues(this,1)" class="plus-btn">+</button>
       </div>
     </div>
+
     <div class="input-container">
-      <label for="OscillationInput">Oscillation Frequency (Hz)</label>
+      <label for="MaxPressureInput">Maximum Pressure (cmH20)</label>
+      <div class="input-wrapper">
+        <button onclick="changeValues(this,-1)" class="minus-btn">-</button>
+        <input type="number" name="MaxPressure" id="MaxPressureInput" min="0" max="30" value="0" step="1"
+          style="width: 100px;  text-align: center;">
+        <button onclick="changeValues(this,1)" class="plus-btn">+</button>
+      </div>
+    </div>
+
+    <div class="input-container">
+      <label for="AttackInput">Attack Time (ms)</label>
       <div class="input-wrapper">
         <button onclick="changeValues(this,-1)">-</button>
-        <input type="number" name="Oscillation" id="OscillationInput" min="0" max="30" value="0" step="1"
+        <input type="number" name="AttackTime" id="AttackInput" min="0" max="30" value="0" step="1"
           style="width: 100px;  text-align: center;">
         <button onclick="changeValues(this,1)">+</button>
       </div>
     </div>
+
     <div class="input-container">
-      <label for="SustainInput">Sustain Time (s)</label>
+      <label for="SustainInput">Sustain Time (ms)</label>
       <div class="input-wrapper">
         <button onclick="changeValues(this,-1)">-</button>
         <input type="number" name="SustainTime" id="SustainInput" min="0" max="30" value="0" step="1"
@@ -51,6 +64,17 @@
         <button onclick="changeValues(this,1)">+</button>
       </div>
     </div>
+
+    <div class="input-container">
+      <label for="RestInput">Rest Time (ms)</label>
+      <div class="input-wrapper">
+        <button onclick="changeValues(this,-1)">-</button>
+        <input type="number" name="RestTime" id="RestInput" min="0" max="30" value="0" step="1"
+          style="width: 100px;  text-align: center;">
+        <button onclick="changeValues(this,1)">+</button>
+      </div>
+    </div>
+
   </div>
 
 
@@ -74,7 +98,7 @@
 
   <div class="slider-container">
     <div class="slider-title">Position Control</div>
-    <input type="range" min="0" max="100" step="25" value="0" class="stroke-slider">
+    <input type="range" min="0" max="100" step="25" value="0" class="stroke-slider" id="position-slider">
     <div class="slider-labels">
       <span>100</span>
       <span>75</span>
@@ -83,7 +107,7 @@
       <span>0</span>
     </div>
   </div>
-  <script src="script5.js"></script>
+  <script src="script6.js"></script>
 </body>
 
 </html>

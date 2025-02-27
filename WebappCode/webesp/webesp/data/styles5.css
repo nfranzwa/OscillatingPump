@@ -2,7 +2,7 @@
   width: 100%;
   background: #04AA6D;
   padding: 20px 40px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -31,7 +31,8 @@
   position: absolute;
 }
 
-html, body {
+html,
+body {
   max-width: 100%;
   overflow-x: hidden;
 }
@@ -46,15 +47,19 @@ canvas {
   flex-direction: column;
   gap: 50px;
   position: absolute;
-  transform: translate(900px, 150px); /* Adjusted to move all the elements to the right */
+  z-index: 10;
+  transform: translate(900px, 100px);
+  /* Adjusted to move all the elements to the right */
 }
 
 .input-container {
+
   width: 200px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 5px;
+  z-index: 11;
 }
 
 .input-container label {
@@ -68,6 +73,7 @@ canvas {
   display: flex;
   align-items: center;
   gap: 5px;
+  z-index: 12;
 }
 
 .input-container input {
@@ -98,16 +104,18 @@ canvas {
   background-color: #00408a;
 }
 
-button:disabled{
+button:disabled {
   background-color: #ccc;
   color: #666;
   cursor: not-allowed;
 }
+
 .message {
   margin-top: 10px;
   font-size: 14px;
   color: #333;
 }
+
 .minus-btn {
   border-radius: 5px 0 0 5px;
 }
@@ -116,23 +124,19 @@ button:disabled{
   border-radius: 0 5px 5px 0;
 }
 
-#pressval, #oscillationval, #sustainval {
-  font-size: 18px;
-  font-weight: bold;
-  color: #333;
-  margin-top: 5px;
-}
 
 .buttons-container {
   position: absolute;
-  bottom: 100px; /* Adjust this value as needed */
+  bottom: 150px;
+  /* Adjust this value as needed */
   display: flex;
   flex-direction: row;
-  gap: 150px;
+  gap: 250px;
 }
 
-.record-button,.calibration-button,.standby-button{
-  transform: translateX(200px);
+.record-button,
+.calibration-button {
+  transform: translateX(100px);
   padding: 20px 20px;
   font-size: 16px;
   width: 200px;
@@ -146,15 +150,32 @@ button:disabled{
   transition: background 0.3s ease;
 }
 
-/* Style the slider *//* Container for the slider and labels */
+.standby-button {
+  transform: translate(-570px,100px);
+  padding: 20px 20px;
+  font-size: 16px;
+  width: 200px;
+  text-align: center;
+  font-weight: bold;
+  background-color: #04AA6D;
+  color: white;
+  border: navy;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+/* Style the slider */
+/* Container for the slider and labels */
 .slider-container {
   position: absolute;
-  right: 2%;
+  right: -2%;
   top: 50%;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
+
 .slider-title {
   position: absolute;
   font-size: 24px;
@@ -164,13 +185,16 @@ button:disabled{
   width: 300px;
   text-align: center;
 }
+
 /* Fancy stroke slider */
 .stroke-slider {
   -webkit-appearance: none;
   appearance: none;
   width: 500px;
   height: 30px;
-  background:  #95b495; /* Gradient effect */
+  z-index: 1;
+  background: #95b495;
+  /* Gradient effect */
   border-radius: 10px;
   outline: none;
   transform: rotate(-90deg);
@@ -216,7 +240,7 @@ button:disabled{
 
 .slider-labels {
   position: absolute;
-  right: 35%; 
+  right: 35%;
   top: -200px;
   display: flex;
   flex-direction: column;
@@ -253,6 +277,3 @@ button:disabled{
 .hidden {
   display: none;
 }
-
-
-
