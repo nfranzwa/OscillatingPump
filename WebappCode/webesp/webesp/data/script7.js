@@ -71,10 +71,6 @@ function calibrating(button) {
   var xhr = new XMLHttpRequest;
   xhr.open("GET", path, true);
   xhr.send();
-
-
-
-
 }
 
 function standby(element) {
@@ -158,25 +154,32 @@ if (!!window.EventSource) {
 
   source.addEventListener('calstate', function (e) {
     calibrationstate = e.data;
-    const calibrationMessage = document.getElementById('calibration-message');F
+    calstr = String(calibrationstate);
+    var path = "/calibration?value=" + calstr;
+    var xhr = new XMLHttpRequest;
+    xhr.open("GET", path, true);
+    xhr.send();
+
+    const calibrationMessage = document.getElementById('calibration-message'); F
     if (calibrationstate == 0 || calibrationstate == 1 || calibrationstate == 3) {
       document.getElementById('record-button').disabled = true;
       document.getElementById('standby-button').disabled = true;
     } else if (calibrationstate == 2) {
+
       document.getElementById('record-button').disabled = false;
       document.getElementById('standby-button').disabled = false;
     }
-    if (calibrationstate == 3){
+    if (calibrationstate == 3) {
       document.getElementById('calibration-button').disabled = true;
-    } else{
+    } else {
       document.getElementById('calibration-button').disabled = false;
     }
 
     if (calibrationstate == 1) {
-    calibrationMessage.textContent = "Calibrating! Please Wait";
-    calibrationMessage.classList.remove("hidden");
-  } else {
-    calibrationMessage.classList.add("hidden");
-  }
+      calibrationMessage.textContent = "Calibrating! Please Wait";
+      calibrationMessage.classList.remove("hidden");
+    } else {
+      calibrationMessage.classList.add("hidden");
+    }
   });
 } 

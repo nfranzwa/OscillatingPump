@@ -157,7 +157,7 @@ void loop() {
     if (!m_zap.Moving(ID_NUM)) {
       delay(10);  // Small delay to prevent CPU hogging
     }
-  }0
+  }
 
   // Continue sensor readings during movement
   while (m_zap.Moving(ID_NUM)) {
