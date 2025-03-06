@@ -20,8 +20,8 @@ void setup() {
   Serial.print("Baud Rate: ");
   Serial.println(BAUD_RATE);
 }
-int num1=3;
-float num2=1.0;
+float num1=1.0;
+int num2=3;
 void loop() {
   // Check if data is available to read from Serial1 (RXD1 and TXD1)
   if (Serial1.available()) {
@@ -30,8 +30,8 @@ void loop() {
     // Debug print the received data
     Serial.print("S2 received: ");
     Serial.println(msg);
-    if(sscanf(msg.c_str(),"%d,%f\n",&num1,&num2)){
-      Serial.printf("S2: num1:%d\tnum2:%d\n",num1,num2);
+    if(sscanf(msg.c_str(),"%f,%d\n",&num1,&num2)){
+      Serial.printf("S2: num1:%-3.3f\tnum2:%-3.3d\n",num1,num2);
     };
     // Optionally, send the received data back to the Serial Monitor (via USB)
     // Serial.print("Echoing received data: ");
@@ -41,6 +41,6 @@ void loop() {
     Serial.println("S2;nothing back");
   }
   // Optionally, send a debug message periodically to show the loop is running
-  Serial1.printf("%d,%f\n",num1,num2);
+  Serial1.printf("%f,%d\n",num1,num2);
   delay(200);
 }
