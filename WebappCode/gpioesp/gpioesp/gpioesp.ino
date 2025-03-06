@@ -1,4 +1,4 @@
-#include <LiquidCrystal_I2C.h>
+// #include <LiquidCrystal_I2C.h>
 #include <Wire.h>
 #include <MightyZap.h>
 
@@ -47,7 +47,7 @@ int calibration(int calibrationstate) {
   int calstarttime = 0;
   int reached = 0;
   while (calibrationstate == 1) {
-
+    Serial.printf("MODEL NUM:%d\n",m_zap.getModelNumber(ID_NUM));
     int curpos = m_zap.presentPosition(ID_NUM);
     if (reached == 0) {
       if (abs(curpos - MIN_POS) < 3) {

@@ -7,38 +7,28 @@
 struct SharedData {
     float P_current;        // Current pressure reading
     float P_target;         // Target pressure
-/*
-  WARNING: Know that increasing PWM values corresponds with minimizing pressure.
-  For the sake of convention + retained understanding, we do the flip when
-  - sending information to the motor.
-  - updating the values of targets
-*/
     int PWM_value;          // Current PWM value
     int ASDR[4];            // ASDR values (Attack, Sustain, Decay, Rest)
     int cyc_period;         // cycle period in mss
-    int PWM_max=4095;            // Maximum PWM value
-    int PWM_min=100;            // Minimum PWM value
+    int PWM_max;            // Maximum PWM value
+    int PWM_min;            // Minimum PWM value
     float PID[3];           // PID coefficients
     String mode_current;    // Current mode
     String param_current;   // Current parameter being edited
     int value_current;      // Current value of the parameter
     String err_msg="";
-    // if the values are negative 1 then it means the values were not initialized.
-    // pressure mapped onto each position
-    float pmap[4095]={-1.0};
-    /* Calibration States:
-        0 - not calibrated
-        1 - running calibration
-        2 - calibration finished
-        3 - running manual 
-    */
-    int calibration_state = 0;
-    float P_min = 0.3;
-    float P_max = 5.0;
-    //pwm min and max values obtained from calibration
-    float PWM_c_min;
-    float PWM_c_max;
-    int manualPWM;
+    float pmap[4095]={-1.0};       // pressure mapped onto each position
+    //0: not calibrated, 1: calibrating, 2: calibrated
+    int calibration_state=2;
+    int PWM_manual;
+    int PWM_c_min=0;
+    int PWM_c_max=4095;
+
+    float P_min=1.0;
+    float P_max=6.0; 
+    //based on sensor specs
+
+    float P_test;
 };
 
 extern SharedData sharedData;  // Declare the global instance of SharedData
@@ -50,8 +40,8 @@ extern SharedData sharedData;  // Declare the global instance of SharedData
 #define P_PIN_OUT   2  // pin to output pressure reading to
 #define PIN_IN      15
 // for I2C sensor
-#define P_PIN_SDL 35
-#define P_PIN_SDA 34
+#define P_PIN_SCL   35
+#define P_PIN_SDA   34
 #define I2C_ADDRESS 0x28  // I2C address of the pressure sensor
 
 #define V_SUPPLY    3.3
@@ -61,9 +51,11 @@ extern SharedData sharedData;  // Declare the global instance of SharedData
 #define P_MAX       10.0 // max pressure sensor output
 #define ADC_RES     4095
 
+//display
+// For I2C sensor
+#define SDA         21 // S(erial) DA(ta):  Display
 #define SCL         22 // S(erial) CL(ock): Display
-#define SDA         31 // S(erial) DA(ta):  Display
-
+// #define EOC         7  // end of conversion pin
 
 
 #define TXD1        18 // ESP serial communication
@@ -78,7 +70,6 @@ extern SharedData sharedData;  // Declare the global instance of SharedData
 #define DRIFT_SAMPLES 10       // Number of samples to check for drift
 
 // motor control
-
 constexpr int ID_NUM = 1;
 constexpr int MIN_POS= 100;
 constexpr int MAX_POS= 4095;
