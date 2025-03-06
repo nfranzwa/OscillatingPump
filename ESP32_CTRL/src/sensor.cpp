@@ -144,7 +144,7 @@ void TF_sensor(void *pvParams){
     for(;;){
         sharedData.P_current=sensor->filter(sensor->readPressure());
         // Serial.printf("Sensor data:%-5f\n",sharedData.P_current);
-        vTaskDelay(pdMS_TO_TICKS(15)); // 100Hz
+        vTaskDelay(pdMS_TO_TICKS(15)); //66.7Hz
     }
 }
 
@@ -179,6 +179,6 @@ void TF_ptest(void* pvParams){
         sharedData.P_test+=P_inc;
         if(printVals) Serial.printf("Sensor Data:%-5f,Generated:%-5f\n",
             sharedData.P_current,sharedData.P_test);
-        vTaskDelay(pdMS_TO_TICKS(50));
+        vTaskDelay(pdMS_TO_TICKS(80));
     }
 }

@@ -140,10 +140,10 @@ void TF_lcd(void* pvParams){
         lcd->setCursor(0, 1);
         lcd->printf("%-7s:%5d ms", sharedData.param_current.c_str(), sharedData.value_current);
         lcd->setCursor(0, 2);
-        lcd->printf("T1:%-4.0f P:%2.2f kPa", (float) sharedData.PWM_value, sharedData.P_current);
-        lcd->setCursor(0,3);
+        lcd->printf("T1:%-4.0f P:%-3.2f kPa", (float) sharedData.PWM_value, sharedData.P_current);
+        // lcd->setCursor(0,3);
         // lcd->scrollDisplayRight();
-        lcd->printf("%s",(sharedData.err_msg=="")? "                    ":sharedData.err_msg);
+        // lcd->printf("%s",(sharedData.err_msg=="")? "                    ":sharedData.err_msg);
         // Serial.printf("T1:%-4.0f P:%-2.2f kPa\n", (float) sharedData.PWM_value, sharedData.P_current);
         // updateLCD(sharedData.P_current,(float) sharedData.PWM_value);
         vTaskDelay(pdMS_TO_TICKS(50));

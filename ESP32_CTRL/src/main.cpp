@@ -34,7 +34,7 @@ void TF_talk2web(void *pvParams);
 void TF_ptest(void *pvParams);
 
 // HardwareSerial Serial2(2);
-HardwareSerial SerialWeb(1);
+HardwareSerial mySerial(1);
 MightyZap m_zap(&Serial2, MIGHTY_ZAP_EN, 1);
 
 LiquidCrystal_I2C lcd(0x27,20,4);  // set LCD_address: 0x27, num cols: 20, num rows: 4
@@ -48,14 +48,14 @@ MotorControl motor(MIGHTY_ZAP_RX,MIGHTY_ZAP_TX,MIGHTY_ZAP_EN);
 void setup() {
     Serial.begin(115200);
     Serial2.begin(32, SERIAL_8N1, MIGHTY_ZAP_RX, MIGHTY_ZAP_TX);
-    SerialWeb.begin(32, SERIAL_8N1,RXD1,TXD1);
     Wire.begin();
+    mySerial.begin(32, SERIAL_8N1,RXD1,TXD1);
     
-    pinMode(P_PIN_OUT,OUTPUT); // physical pin out for pressure
+    // pinMode(P_PIN_OUT,OUTPUT); // physical pin out for pressure
     Wire.beginTransmission(I2C_ADDRESS);
     if(Wire.endTransmission()==0) Serial.println("Pressure sensor found at 0x28");
     else Serial.println("sensor not found, check wiring");
-    digitalWrite(P_PIN_OUT,LOW);
+    // digitalWrite(P_PIN_OUT,LOW);
     sharedData.PWM_min = 100;
     sharedData.PWM_max = 4095;
     sharedData.PWM_value= 200;
@@ -79,12 +79,12 @@ void setup() {
     ui.setLCD(&lcd);
     
     // create tasks
-    xTaskCreatePinnedToCore(TF_sensor   ,"Sensor Task"  ,4000, &sensor1, 1, &TH_sensor , 0);
+    xTaskCreatePinnedToCore(TF_sensor   ,"Sensor Task"  ,4000, &sensor1, 2, &TH_sensor , 0);
     xTaskCreatePinnedToCore(TF_wavegen  ,"Wavegen Task" ,2000, &wave   , 1, &TH_wavegen, 0);
     xTaskCreatePinnedToCore(TF_lcd      ,"LCD Task"     ,4000, &lcd    , 1, &TH_lcd    , 1);
     xTaskCreatePinnedToCore(TF_ui       ,"UI Task"      ,4000, &ui     , 1, &TH_ui     , 0);
     //constantly running pressure map function?
-    xTaskCreatePinnedToCore(TF_talk2web ,"Web Comm Task",8000, nullptr , 4, &TH_talk2web,0);
+    xTaskCreatePinnedToCore(TF_talk2web ,"Web Comm Task",40000, nullptr , 0, &TH_talk2web,0);
     xTaskCreatePinnedToCore(TF_calibrate,"Calib. Task"  ,4000, &motor  , 0, &TH_calibrate,0);
     xTaskCreatePinnedToCore(TF_motor    ,"Motor Task"   ,4000, &motor  , 0, &TH_motor  ,0);
     xTaskCreatePinnedToCore(TF_ptest    ,"testP Task"   ,2000, nullptr , 0, &TH_ptest  ,0);
@@ -98,6 +98,9 @@ void loop() {
     );
     */
     //Serial.printf("%f\n",(float) millis());
+    // mySerial.print("1.0,");
+    // mySerial.println("1");
+    // delay(100);
 }
 
 void TF_talk2web(void* pvParams){
@@ -105,21 +108,28 @@ void TF_talk2web(void* pvParams){
     Serial.println("Start web comm task");
     for(;;){
         Serial.println("Hewwo?");
-        if(SerialWeb.available()){
-            String msg = SerialWeb.readStringUntil('\n');
+        if(mySerial.available()){
+            String msg = mySerial.readStringUntil('\n');
+            // String msg="help";
+            vTaskDelay(100);
             Serial.println("Received "+msg);
             //if the new message matches format, rewrite the variables
             //MinP, MaxP, S, R, A/D, calibration_state, manual position
-            if (sscanf(msg.c_str(), "%d,%d,%d,%d,%d,%d,%d",
+            
+            if (sscanf(msg.c_str(), "%f,%f,%d,%d,%d,%d,%d",
                 &sharedData.P_min, &sharedData.P_max,&sharedData.ASDR[1],
                 &sharedData.ASDR[3],&sharedData.ASDR[0],
                 &sharedData.calibration_state,&sharedData.PWM_manual) == 7
                 ) {
             sharedData.ASDR[2]= sharedData.ASDR[0];
+            
             // Successfully parsed the message
             //print statement for update
             Serial.printf("Pmin%-2.2f Pmax%-2.2f A/D:%d S:%d R%d\n",
                 sharedData.P_min,sharedData.P_max,sharedData.ASDR[0],sharedData.ASDR[1],sharedData.ASDR[3]);    
+            }
+            else{
+                Serial.println("msg doesn't match\n");
             }
             /*
             char inputArray[msg.length() + 1];  // Create a char array of the correct size
@@ -143,12 +153,17 @@ void TF_talk2web(void* pvParams){
             Serial.printf("Pmin%-2.2f Pmax%-2.2f A/D:%d S:%d R%d\n",
                 sharedData.P_min,sharedData.P_max,sharedData.ASDR[0],sharedData.ASDR[1],sharedData.ASDR[3]);
             */
+           
         }
         else{
             Serial.println("is anyone hewe?");
         }
         //send data to the web server:
-        SerialWeb.printf("%f,%d\n",sharedData.P_current,sharedData.calibration_state);
+        
+        // mySerial.print("1.0,");
+        // mySerial.println("1");
+        Serial.printf("%s,%d\n",(String) sharedData.P_current ,sharedData.calibration_state);
+        Serial.println("T2W end of loop");
         vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
