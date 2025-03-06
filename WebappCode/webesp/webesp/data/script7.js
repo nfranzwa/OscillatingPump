@@ -74,7 +74,10 @@ function calibrating(button) {
 }
 
 function standby(element) {
-
+  var path = "/calibration?value=4S";
+  var xhr = new XMLHttpRequest;
+  xhr.open("GET", path, true);
+  xhr.send();
 }
 
 
@@ -153,19 +156,19 @@ if (!!window.EventSource) {
   }, false);
 
   source.addEventListener('calstate', function (e) {
-    calibrationstate = e.data;
-    calstr = String(calibrationstate);
-    var path = "/calibration?value=" + calstr;
-    var xhr = new XMLHttpRequest;
-    xhr.open("GET", path, true);
-    xhr.send();
 
-    const calibrationMessage = document.getElementById('calibration-message'); F
+
+    const calibrationMessage = document.getElementById('calibration-message');
     if (calibrationstate == 0 || calibrationstate == 1 || calibrationstate == 3) {
       document.getElementById('record-button').disabled = true;
       document.getElementById('standby-button').disabled = true;
     } else if (calibrationstate == 2) {
-
+      calibrationstate = e.data;
+      calstr = String(calibrationstate);
+      var path = "/calibration?value=2";
+      var xhr = new XMLHttpRequest;
+      xhr.open("GET", path, true);
+      xhr.send();
       document.getElementById('record-button').disabled = false;
       document.getElementById('standby-button').disabled = false;
     }
