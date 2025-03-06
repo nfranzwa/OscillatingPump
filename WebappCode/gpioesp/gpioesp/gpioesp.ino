@@ -8,6 +8,8 @@
 #define MAX_POS 4095  // Default max position
 #define TXD1 18
 #define RXD1 19
+#define I2C_SDA 34
+#define I2C_SCL 25
 #define MIGHTY_ZAP_RX 16  // Define RX pin for Serial2
 #define MIGHTY_ZAP_TX 17  // Define TX pin for Serial2
 #define MIGHTY_ZAP_EN 13  // Enable pin
@@ -133,7 +135,7 @@ String readPressureRaw() {
 void setup() {
 
   Serial.begin(115200);
-  Wire.begin();
+  Wire.begin(I2C_SDA,I2C_SCL);
   Serial2.begin(32, SERIAL_8N1, MIGHTY_ZAP_RX, MIGHTY_ZAP_TX);
   m_zap.begin(32);
   Wire.beginTransmission(I2C_ADDRESS);
@@ -177,7 +179,7 @@ void setup() {
 
 void loop() {
   String pres = readPressureRaw();
-  //Serial.println(pres);
+  Serial.println(pres);
   float totalPeriod = 1000.0 / frequency;             // Period in milliseconds
   float activeTime = totalPeriod * DUTY_CYCLE;        // Active time in milliseconds
   float restTime = totalPeriod * (1.0 - DUTY_CYCLE);  // Rest time in milliseconds
@@ -213,9 +215,7 @@ void loop() {
   }
 
   if (calibrationstate == 0) {
-    Serial.println(calibrationstate);
     calibrationstate = calibration(calibrationstate);
-    Serial.println(calibrationstate);
   }
 
   /* if (currentTime < activeTime) {
