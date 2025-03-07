@@ -20,9 +20,22 @@ void setup() {
   Serial.print("Baud Rate: ");
   Serial.println(BAUD_RATE);
 }
-float num1=1.0;
-int num2=3;
+float num1;
+int num2;
+String serialInput; // this is for the computer serial
+bool printVals=false;
 void loop() {
+  if(Serial.available()){
+    serialInput=Serial.readStringUntil('\n');
+    //if there's a new message that matches, rewrite the variables
+    if (sscanf(serialInput.c_str(), "%f,%d\n", &num1, &num2) == 2) {
+        // Successfully parsed the message
+        Serial.printf("Updated: num1 = %-4.4f,num2 = %d\n",num1,num2);
+    }
+    if (serialInput.startsWith("Toggle")){
+        printVals=!printVals;
+    }
+  }
   // Check if data is available to read from Serial1 (RXD1 and TXD1)
   if (Serial1.available()) {
     // Read incoming data from Serial1
@@ -42,5 +55,6 @@ void loop() {
   }
   // Optionally, send a debug message periodically to show the loop is running
   Serial1.printf("%f,%d\n",num1,num2);
+  if(printVals) Serial.printf("S2; num1: %-4.4f, num2: %d\n",num1, num2);
   delay(200);
 }
