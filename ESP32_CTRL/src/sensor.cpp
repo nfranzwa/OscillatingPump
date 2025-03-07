@@ -2,11 +2,13 @@
 #include <Arduino.h>
 #include "sharedData.h"
 #include <Wire.h>
+#include <filter_lib.h>
 
 void PSensor::begin()
 {
     analogReadResolution(12); // default 12 bits (0~4095)
     analogSetAttenuation(ADC_11db);
+    // if(SENSOR_TYPE=="I2C") pinMode(EOC,INPUT);
 }
 
 float PSensor::readPressure()
@@ -57,8 +59,10 @@ float PSensor::readPressure()
         }
         return maptopsi(praw) * 6.89746;
     }
-    else
-    {
+    else if(SENSOR_TYPE=="DUMMY"){
+        return sharedData.P_test;
+    }
+    else{
         return P_MAX;
     }
     // CONSIDER: adding a constrain() to value
@@ -77,33 +81,72 @@ float PSensor::maptopsi(int value)
     return result;
 }
 
-float PSensor::filter(float measurement)
-{
-    /*
-    Digital filter to apply to the sensor measurements.
-    Currently trying to implement a Kalman filter.
-    */
+float PSensor::filter(float measurement){
+    bool useLPF=true;
 
-    // TODO: Validate correctness
-    float prediction = past_estimate;
-    float prediction_err = past_error + NOISE_PROC; // prediction error
-
-    float gain_kalman = prediction_err / (prediction_err + NOISE_MEAS);
-    float estimate = prediction + gain_kalman * (measurement - prediction);
-    float estimate_err = (1 - gain_kalman) * prediction_err;
-
-    past_estimate = estimate;
-    past_error = estimate_err;
-    return estimate;
+    if(useLPF){
+        return LPF.filter(measurement);
+    }
+    else{
+        /*
+        Digital filter to apply to the sensor measurements.
+        Currently trying to implement a Kalman filter.
+        */
+        
+        float prediction = past_estimate;
+        float prediction_err= past_error+NOISE_PROC; // prediction error
+        
+        float gain_kalman= prediction_err/(prediction_err+NOISE_MEAS);
+        float estimate= prediction+gain_kalman*(measurement-prediction);
+        float estimate_err = (1-gain_kalman)*prediction_err;
+        
+        past_estimate=estimate;
+        past_error=estimate_err;
+        return estimate;
+    }
 }
 
-void TF_sensor(void *pvParams)
-{
-    // generic data is sent (void*) so we type cast
-    PSensor *sensor = (PSensor *)pvParams;
-    for (;;)
-    {
-        sharedData.P_current = sensor->filter(sensor->readPressure());
-        vTaskDelay(pdMS_TO_TICKS(10)); // 100Hz
+void TF_sensor(void *pvParams){
+    //generic data is sent (void*) so we type cast
+    PSensor* sensor =(PSensor*) pvParams;
+    for(;;){
+        sharedData.P_current=sensor->filter(sensor->readPressure());
+        // Serial.printf("Sensor data:%-5f\n",sharedData.P_current);
+        vTaskDelay(pdMS_TO_TICKS(15)); //66.7Hz
+    }
+}
+
+/*
+Replicate test sensor data according to message sent to serial:
+Feed it pressure value and amount to increment each iteration
+in the following format: "TP: ##.###, I:#.###"
+it should update the values based on the last message received,
+and write to sharedData.P_test
+*/
+void TF_ptest(void* pvParams){
+    float P_val=2.0;//test pressure value
+    float P_inc=-0.0;//test pressure increment
+    String serialInput;
+    sharedData.P_test=P_val;
+    bool printVals=false;
+    for (;;){
+        //scan serial port for message like example
+        if(Serial.available()){
+            serialInput=Serial.readStringUntil('\n');
+            //if there's a new message that matches, rewrite the variables
+            if (sscanf(serialInput.c_str(), "TP:%f, I:%f", &P_val, &P_inc) == 2) {
+                // Successfully parsed the message
+                Serial.printf("Updated: TP = %-4.4f,I = %-4.4f\n",P_val,P_inc);
+                sharedData.P_test=P_val;
+            }
+            if (serialInput.startsWith("Toggle")){
+                printVals=!printVals;
+            }
+        }
+        //otherwise continue changing the sharedData.P_test as normal
+        sharedData.P_test+=P_inc;
+        if(printVals) Serial.printf("Sensor Data:%-5f,Generated:%-5f\n",
+            sharedData.P_current,sharedData.P_test);
+        vTaskDelay(pdMS_TO_TICKS(80));
     }
 }

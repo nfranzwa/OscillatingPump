@@ -29,10 +29,10 @@ class MotorControl {
         void handleMovement();
         void updateParameters();
         void readAndPrintSensor();
-        void TF_motor(void* pvParams);
-        void TF_calibrate(void* pvParams);
-        void resetMap();
-
+        void TH_motor(void* pvParams);
+        void mapPressure();
+        void resetPMap();
+        void calibrate(int state);
     };
 
 #endif

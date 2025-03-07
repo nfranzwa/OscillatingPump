@@ -1,7 +1,7 @@
 #ifndef SENSOR_H
 #define SENSOR_H
 #include <Arduino.h>
-
+#include <filter_lib.h>
 class PSensor {
     private:
         const int SENSOR_PIN;
@@ -12,7 +12,16 @@ class PSensor {
         const float P_MIN;
         const int ADC_RESOLUTION;
         String SENSOR_TYPE;
-        const int I2C_ADDRESS=0x27;
+        // const int I2C_ADDRESS=0x27;
+        const int I2C_ADDRESS=0x28;
+        // cmd to request measurement
+        const byte CMD[3] = {0xAA,0x00,0x00};
+        const double outputMax = 15099494;  // 90% of 2^24 counts
+        const double outputMin = 1677722;   // 10% of 2^24 counts
+        const double pressureMax = 6.0;     // 6 kPa maximum pressure
+        const double pressureMin = 0.0;     // 0 kPa minimum pressure
+        double P_atm = 0.0;                 // init pressure reading/calibration
+        int praw=0;
 
         //filter parameters
         float past_estimate     = 0.0;
@@ -27,6 +36,7 @@ class PSensor {
         // float readPressureABP();
         float maptopsi(int value);
         float filter(float measurement);
+        lowpass_filter LPF=lowpass_filter(2.0);
         // void sensor_debug(bool debug=false);
 };
 #endif

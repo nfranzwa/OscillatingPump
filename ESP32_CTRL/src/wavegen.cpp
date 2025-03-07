@@ -68,8 +68,7 @@ void WaveGenerator::update(int* ADSR,int min_PWM,int max_PWM,bool debug) {
 void TF_wavegen(void *pvParameters) {
     WaveGenerator* wave = (WaveGenerator*) pvParameters;
     for (;;) {
-        // TODO: change this to be using the PMAP value for the min and max pressures from calibration
-        wave->update(sharedData.ASDR, sharedData.PWM_c_min, sharedData.PWM_c_max);
+        wave->update(sharedData.ASDR, sharedData.PWM_min, sharedData.PWM_max);
         sharedData.PWM_value=wave->generatePWM();
         vTaskDelay(pdMS_TO_TICKS(5));
     }
