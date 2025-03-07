@@ -84,7 +84,7 @@ void setup() {
     xTaskCreatePinnedToCore(TF_lcd      ,"LCD Task"     ,4000, &lcd    , 1, &TH_lcd    , 1);
     xTaskCreatePinnedToCore(TF_ui       ,"UI Task"      ,4000, &ui     , 1, &TH_ui     , 0);
     //constantly running pressure map function?
-    xTaskCreatePinnedToCore(TF_talk2web ,"Web Comm Task",40000, nullptr , 0, &TH_talk2web,0);
+    xTaskCreatePinnedToCore(TF_talk2web ,"Web Comm Task",90000, nullptr, 2, &TH_talk2web,0);
     xTaskCreatePinnedToCore(TF_calibrate,"Calib. Task"  ,4000, &motor  , 0, &TH_calibrate,0);
     xTaskCreatePinnedToCore(TF_motor    ,"Motor Task"   ,4000, &motor  , 0, &TH_motor  ,0);
     xTaskCreatePinnedToCore(TF_ptest    ,"testP Task"   ,2000, nullptr , 0, &TH_ptest  ,0);
@@ -161,8 +161,16 @@ void TF_talk2web(void* pvParams){
         //send data to the web server:
         
         // mySerial.print("1.0,");
-        // mySerial.println("1");
-        Serial.printf("%s,%d\n",(String) sharedData.P_current ,sharedData.calibration_state);
+        // Prepare the formatted string
+        // String dataToSend = String(sharedData.P_current) + "," + String(sharedData.calibration_state) + "\n";
+
+        // // Convert the string to a C-style string (const char*)
+        // const char* data = dataToSend.c_str();
+
+        // // Send the string using mySerial.write(), one byte at a time
+        // mySerial.write(reinterpret_cast<const uint8_t*>(data), dataToSend.length());
+
+        mySerial.printf("%f,%d\n",sharedData.P_current ,sharedData.calibration_state);
         Serial.println("T2W end of loop");
         vTaskDelay(pdMS_TO_TICKS(100));
     }

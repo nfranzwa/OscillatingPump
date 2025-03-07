@@ -16,17 +16,15 @@ class PSensor {
         const int I2C_ADDRESS=0x28;
         // cmd to request measurement
         const byte CMD[3] = {0xAA,0x00,0x00};
-        const double outputMax = 15099494;  // 90% of 2^24 counts
-        const double outputMin = 1677722;   // 10% of 2^24 counts
-        const double pressureMax = 6.0;     // 6 kPa maximum pressure
-        const double pressureMin = 0.0;     // 0 kPa minimum pressure
-        double P_atm = 0.0;                 // init pressure reading/calibration
+        const float outputMax = 15099494;  // 90% of 2^24 counts
+        const float outputMin = 1677722;   // 10% of 2^24 counts
+        const float pressureMax = 6.0;     // 6 kPa maximum pressure
+        const float pressureMin = 0.0;     // 0 kPa minimum pressure
+        float P_atm = 0.0;                 // init pressure reading/calibration
         int praw=0;
         uint8_t data[7];
         float press_counts = 0;
         float pressure = 0;
-        float outputmax = 15099494;  // output at maximum pressure [counts]
-        float outputmin = 1677722;   // output at minimum pressure [counts]
         float pmax = 1;              // maximum value of pressure range [bar, psi, kPa, etc.]
         float pmin = 0;  
         float psi = 0;
