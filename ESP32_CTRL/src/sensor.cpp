@@ -44,7 +44,7 @@ float PSensor::readPressure()
     {
         int stat = Wire.write(CMD, 3);
         stat |= Wire.endTransmission();
-        delay(10);
+        vTaskDelay(pdMS_TO_TICKS(10));
         int i = 0;
         Wire.requestFrom(I2C_ADDRESS, 7);
         for (i = 0; i < 7; i++)
@@ -115,7 +115,7 @@ void TF_sensor(void *pvParams)
     for (;;)
     {
         sharedData.P_current = sensor->filter(sensor->readPressure());
-        // Serial.printf("Sensor data:%-5f\n",sharedData.P_current);
+        Serial.printf("Sensor data:%-5f\n",sharedData.P_current);
         vTaskDelay(pdMS_TO_TICKS(15)); // 66.7Hz
     }
 }

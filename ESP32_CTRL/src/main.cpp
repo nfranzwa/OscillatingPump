@@ -41,7 +41,7 @@ LiquidCrystal_I2C lcd(0x27,20,4);  // set LCD_address: 0x27, num cols: 20, num r
 PhysicalUI ui(CLK,DT,SW);
 // PSensor sensor1(P_PIN,"NXP", V_SUPPLY, V_MIN, V_MAX, P_MAX,P_MIN, ADC_RES); 
 // PSensor sensor2(P_PIN_NEW,"ABP",V_SUPPLY,V_MIN,V_MAX,P_MAX,P_MIN, ADC_RES);
-PSensor sensor1(P_PIN,"DUMMY",V_SUPPLY,V_MIN,V_MAX,P_MAX,P_MIN, ADC_RES);
+PSensor sensor1(P_PIN,"I2C",V_SUPPLY,V_MIN,V_MAX,P_MAX,P_MIN, ADC_RES);
 WaveGenerator wave(sharedData.PWM_min,sharedData.PWM_max);
 MotorControl motor(MIGHTY_ZAP_RX,MIGHTY_ZAP_TX,MIGHTY_ZAP_EN);
 

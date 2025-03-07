@@ -40,8 +40,8 @@ extern SharedData sharedData;  // Declare the global instance of SharedData
 #define P_PIN_OUT   2  // pin to output pressure reading to
 #define PIN_IN      15
 // for I2C sensor
-#define P_PIN_SCL   35
-#define P_PIN_SDA   34
+#define P_PIN_SCL   22
+#define P_PIN_SDA   21
 #define I2C_ADDRESS 0x28  // I2C address of the pressure sensor
 
 #define V_SUPPLY    3.3
@@ -53,8 +53,8 @@ extern SharedData sharedData;  // Declare the global instance of SharedData
 
 //display
 // For I2C sensor
-#define SDA         21 // S(erial) DA(ta):  Display
-#define SCL         22 // S(erial) CL(ock): Display
+#define SDA         35 // S(erial) DA(ta):  Display
+#define SCL         34 // S(erial) CL(ock): Display
 // #define EOC         7  // end of conversion pin
 
 
