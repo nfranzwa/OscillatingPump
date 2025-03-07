@@ -26,14 +26,13 @@ float minpressure;
 float maxpressure;
 float attacktime;
 float resttime;
-int calibrationstate = 0;
+int calibrationstate;
 float desiredposition;
 float susttime;
 
 int lcdColumns = 20;
 int lcdRows = 4;
 LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);
-int sustaintime = 1000;
 float frequency = 0.75;            // Default frequency in Hz
 unsigned long lastSensorRead = 0;  // For timing sensor readings
 unsigned long cycleStartTime = 0;  // For tracking cycle timing
@@ -197,7 +196,7 @@ void loop() {
     token = strtok(NULL, ",");
     if (token != NULL) attacktime = atoi(token);
     token = strtok(NULL, ",");
-    if (token != NULL) sustaintime = atoi(token);
+    if (token != NULL) susttime = atoi(token);
     token = strtok(NULL, ",");
     if (token != NULL) resttime = atoi(token);
     token = strtok(NULL, ",");
