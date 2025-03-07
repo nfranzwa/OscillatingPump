@@ -49,12 +49,12 @@ void setup() {
     Serial.begin(115200);
     Serial2.begin(32, SERIAL_8N1, MIGHTY_ZAP_RX, MIGHTY_ZAP_TX);
     Wire.begin();
-    mySerial.begin(32, SERIAL_8N1,RXD1,TXD1);
+    mySerial.begin(115200, SERIAL_8N1,RXD1,TXD1);
     
     // pinMode(P_PIN_OUT,OUTPUT); // physical pin out for pressure
     Wire.beginTransmission(I2C_ADDRESS);
     if(Wire.endTransmission()==0) Serial.println("Pressure sensor found at 0x28");
-    else Serial.println("sensor not found, check wiring");
+    else Serial.println("sensor not found, check wiring"); 
     // digitalWrite(P_PIN_OUT,LOW);
     sharedData.PWM_min = 100;
     sharedData.PWM_max = 4095;
