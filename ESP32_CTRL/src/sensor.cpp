@@ -42,27 +42,26 @@ float PSensor::readPressure()
     }
     else if (SENSOR_TYPE == "I2C")
     {
-        int stat = Wire.write( 3);
+        int stat = Wire.write(CMD, 3);
         stat |= Wire.endTransmission();
         delay(10);
-        int praw = 0;
-        Wire.requestFrom(I2C_ADDRESS, 2);
-        if (Wire.available() >= 2)
+        int i = 0;
+        Wire.requestFrom(I2C_ADDRESS, 7);
+        for (i = 0; i < 7; i++)
         {
-            uint8_t highByte = Wire.read();
-            uint8_t lowByte = Wire.read();
-            praw = (highByte << 8) | lowByte;
+            data[i] = Wire.read();
         }
-        else
-        {
-            Serial.println("No data received.");
-        }
-        return maptopsi(praw) * 6.89746;
+        press_counts = data[3] + data[2] * 256 + data[1] * 65536; // calculate digital pressure counts
+        pressure = ((press_counts - outputmin) * (pmax - pmin)) / (outputmax - outputmin) + pmin;
+        return pressure;
+
     }
-    else if(SENSOR_TYPE=="DUMMY"){
+    else if (SENSOR_TYPE == "DUMMY")
+    {
         return sharedData.P_test;
     }
-    else{
+    else
+    {
         return P_MAX;
     }
     // CONSIDER: adding a constrain() to value
@@ -81,38 +80,43 @@ float PSensor::maptopsi(int value)
     return result;
 }
 
-float PSensor::filter(float measurement){
-    bool useLPF=true;
+float PSensor::filter(float measurement)
+{
+    bool useLPF = true;
 
-    if(useLPF){
+    if (useLPF)
+    {
         return LPF.filter(measurement);
     }
-    else{
+    else
+    {
         /*
         Digital filter to apply to the sensor measurements.
         Currently trying to implement a Kalman filter.
         */
-        
+
         float prediction = past_estimate;
-        float prediction_err= past_error+NOISE_PROC; // prediction error
-        
-        float gain_kalman= prediction_err/(prediction_err+NOISE_MEAS);
-        float estimate= prediction+gain_kalman*(measurement-prediction);
-        float estimate_err = (1-gain_kalman)*prediction_err;
-        
-        past_estimate=estimate;
-        past_error=estimate_err;
+        float prediction_err = past_error + NOISE_PROC; // prediction error
+
+        float gain_kalman = prediction_err / (prediction_err + NOISE_MEAS);
+        float estimate = prediction + gain_kalman * (measurement - prediction);
+        float estimate_err = (1 - gain_kalman) * prediction_err;
+
+        past_estimate = estimate;
+        past_error = estimate_err;
         return estimate;
     }
 }
 
-void TF_sensor(void *pvParams){
-    //generic data is sent (void*) so we type cast
-    PSensor* sensor =(PSensor*) pvParams;
-    for(;;){
-        sharedData.P_current=sensor->filter(sensor->readPressure());
+void TF_sensor(void *pvParams)
+{
+    // generic data is sent (void*) so we type cast
+    PSensor *sensor = (PSensor *)pvParams;
+    for (;;)
+    {
+        sharedData.P_current = sensor->filter(sensor->readPressure());
         // Serial.printf("Sensor data:%-5f\n",sharedData.P_current);
-        vTaskDelay(pdMS_TO_TICKS(15)); //66.7Hz
+        vTaskDelay(pdMS_TO_TICKS(15)); // 66.7Hz
     }
 }
 
@@ -123,30 +127,36 @@ in the following format: "TP: ##.###, I:#.###"
 it should update the values based on the last message received,
 and write to sharedData.P_test
 */
-void TF_ptest(void* pvParams){
-    float P_val=2.0;//test pressure value
-    float P_inc=-0.0;//test pressure increment
+void TF_ptest(void *pvParams)
+{
+    float P_val = 2.0;  // test pressure value
+    float P_inc = -0.0; // test pressure increment
     String serialInput;
-    sharedData.P_test=P_val;
-    bool printVals=false;
-    for (;;){
-        //scan serial port for message like example
-        if(Serial.available()){
-            serialInput=Serial.readStringUntil('\n');
-            //if there's a new message that matches, rewrite the variables
-            if (sscanf(serialInput.c_str(), "TP:%f, I:%f", &P_val, &P_inc) == 2) {
+    sharedData.P_test = P_val;
+    bool printVals = false;
+    for (;;)
+    {
+        // scan serial port for message like example
+        if (Serial.available())
+        {
+            serialInput = Serial.readStringUntil('\n');
+            // if there's a new message that matches, rewrite the variables
+            if (sscanf(serialInput.c_str(), "TP:%f, I:%f", &P_val, &P_inc) == 2)
+            {
                 // Successfully parsed the message
-                Serial.printf("Updated: TP = %-4.4f,I = %-4.4f\n",P_val,P_inc);
-                sharedData.P_test=P_val;
+                Serial.printf("Updated: TP = %-4.4f,I = %-4.4f\n", P_val, P_inc);
+                sharedData.P_test = P_val;
             }
-            if (serialInput.startsWith("Toggle")){
-                printVals=!printVals;
+            if (serialInput.startsWith("Toggle"))
+            {
+                printVals = !printVals;
             }
         }
-        //otherwise continue changing the sharedData.P_test as normal
-        sharedData.P_test+=P_inc;
-        if(printVals) Serial.printf("Sensor Data:%-5f,Generated:%-5f\n",
-            sharedData.P_current,sharedData.P_test);
+        // otherwise continue changing the sharedData.P_test as normal
+        sharedData.P_test += P_inc;
+        if (printVals)
+            Serial.printf("Sensor Data:%-5f,Generated:%-5f\n",
+                          sharedData.P_current, sharedData.P_test);
         vTaskDelay(pdMS_TO_TICKS(80));
     }
 }

@@ -22,7 +22,14 @@ class PSensor {
         const double pressureMin = 0.0;     // 0 kPa minimum pressure
         double P_atm = 0.0;                 // init pressure reading/calibration
         int praw=0;
-
+        uint8_t data[7];
+        float press_counts = 0;
+        float pressure = 0;
+        float outputmax = 15099494;  // output at maximum pressure [counts]
+        float outputmin = 1677722;   // output at minimum pressure [counts]
+        float pmax = 1;              // maximum value of pressure range [bar, psi, kPa, etc.]
+        float pmin = 0;  
+        float psi = 0;
         //filter parameters
         float past_estimate     = 0.0;
         float past_error        = 1.0;
