@@ -105,8 +105,6 @@ int calculateSpeed(int distance, float freq) {
   return (int)constrain(requiredSpeed, 1, 1023);
 }
 
-std::vector<uint16_t> myList = {};
-
 void updateParameters() {
   int distance = MAX_POS - MIN_POS;
   int speed = calculateSpeed(distance, frequency);
@@ -192,7 +190,7 @@ void loop() {
   if (mySerial.available()) {
     // Read data and display it
     String message = mySerial.readStringUntil('\n');
-    //Serial.println("Received: " + message);
+    Serial.println("Received: " + message);
     char inputArray[message.length() + 1];  // Create a char array of the correct size
     message.toCharArray(inputArray, sizeof(inputArray));
     char *token = strtok(inputArray, ",");
@@ -209,14 +207,13 @@ void loop() {
     if (token != NULL) calibrationstate = atoi(token);
     token = strtok(NULL, ",");
     if (token != NULL) desiredposition = atoi(token);
-
   } else {
     Serial.println("Not coming");
   }
 
-  if (calibrationstate == 0) {
+  /* if (calibrationstate == 0) {
     calibrationstate = calibration(calibrationstate);
-  }
+  } */
 
   /* if (currentTime < activeTime) {
     // First half of active period: forward movement
@@ -244,7 +241,7 @@ void loop() {
     }
     delay(10);
   }
-  mySerial.print(pres);
+  mySerial.print("42");
   mySerial.print(",");
   mySerial.println(calibrationstate);
   delay(100);

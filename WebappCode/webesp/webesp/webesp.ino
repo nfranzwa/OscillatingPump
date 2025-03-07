@@ -82,7 +82,7 @@ void setup() {
   initWiFi();
   Serial.println();
   initLittleFS();
-  mySerial.begin(115200, SERIAL_8N1, RXD1, TXD1);
+  mySerial.begin(32, SERIAL_8N1, RXD1, TXD1);
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
     request->send(LittleFS, "/index.html", "text/html");
@@ -214,12 +214,12 @@ void loop() {
     // Read data and display it
     String message = mySerial.readStringUntil('\n');
     Serial.println("Received: " + message);
-    char inputArray[message.length() + 1];  
+    char inputArray[message.length() + 1];
     message.toCharArray(inputArray, sizeof(inputArray));
     char *token = strtok(inputArray, ",");
     if (token != NULL) sensorpres = atoi(token);
     token = strtok(NULL, ",");
-    if (token != NULL) calibrationstate = atoi(token);
+    if (token != NULL) calibrationstate = atoi(token); 
     server.on("/readings", HTTP_GET, [=](AsyncWebServerRequest *request) {
       String json = sensorpres + "," + String(attacktimefloat) + "," + String(SustValfloat) + "," + String(resttimefloat);
       request->send_P(200, "text/plain", json.c_str());
@@ -229,9 +229,11 @@ void loop() {
       // Send Events to the client with the Sensor Readings Every 10 seconds
       events.send("ping", NULL, millis());
       events.send(sensorpres.c_str(), "pressure", millis());
-      events.send(calibrationstate.c_str(),"calstate",millis());
+      events.send(calibrationstate.c_str(), "calstate", millis());
       lastTime = millis();
     }
+  } else {
+    Serial.println("Not reaching");
   }
 
 
