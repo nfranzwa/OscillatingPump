@@ -78,7 +78,7 @@ function calibrating(button) {
 }
 
 function standby(element) {
-  var path = "/calibration?value=3";
+  var path = "/calibration?value=4S";
   var xhr = new XMLHttpRequest;
   xhr.open("GET", path, true);
   xhr.send();
@@ -167,32 +167,40 @@ if (!!window.EventSource) {
     updateChart(e.data);
   }, false);
 
-  source.addEventListener('calstate', function (e) {
-    const calibrationMessage = document.getElementById('calibration-message');
-    if (calibrationstate == 0 || calibrationstate == 1 || calibrationstate == 3) {
-      document.getElementById('record-button').disabled = true;
-      document.getElementById('standby-button').disabled = true;
-    } else if (calibrationstate == 2) {
-      calibrationstate = e.data;
-      calstr = String(calibrationstate);
-      var path = "/calibration?value=2";
-      var xhr = new XMLHttpRequest;
-      xhr.open("GET", path, true);
-      xhr.send();
-      document.getElementById('record-button').disabled = false;
-      document.getElementById('standby-button').disabled = false;
-    }
-    if (calibrationstate == 3) {
-      document.getElementById('calibration-button').disabled = true;
-    } else {
-      document.getElementById('calibration-button').disabled = false;
-    }
+ // Replace the calstate event listener in your script8.js file with this:
 
-    if (calibrationstate == 1) {
-      calibrationMessage.textContent = "Calibrating! Please Wait";
-      calibrationMessage.classList.remove("hidden");
-    } else {
-      calibrationMessage.classList.add("hidden");
-    }
-  });
+source.addEventListener('calstate', function (e) {
+  const calibrationMessage = document.getElementById('calibration-message');
+  
+  // Update the calibration state
+  calibrationstate = parseInt(e.data);
+  
+  // Handle button enabling/disabling
+  if (calibrationstate == 0 || calibrationstate == 1 || calibrationstate == 3) {
+    document.getElementById('record-button').disabled = true;
+    document.getElementById('standby-button').disabled = true;
+  } else if (calibrationstate == 2) {
+    document.getElementById('record-button').disabled = false;
+    document.getElementById('standby-button').disabled = false;
+  }
+  
+  if (calibrationstate == 3) {
+    document.getElementById('calibration-button').disabled = true;
+  } else {
+    document.getElementById('calibration-button').disabled = false;
+  }
+
+  // Update the calibration message
+  if (calibrationstate == 0) {
+    calibrationMessage.textContent = "Calibrating...";
+    calibrationMessage.classList.remove("hidden");
+    calibrationMessage.className = "calibration-status calibrating";
+  } else if (calibrationstate == 3) {
+    calibrationMessage.textContent = "Calibration Done";
+    calibrationMessage.classList.remove("hidden");
+    calibrationMessage.className = "calibration-status complete";
+  } else {
+    calibrationMessage.classList.add("hidden");
+  }
+});
 }

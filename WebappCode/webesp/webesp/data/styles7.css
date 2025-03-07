@@ -340,3 +340,70 @@ input:checked + .slider:before {
 .hidden {
   display: none;
 }
+
+/* Add this to your existing styles7.css file */
+
+/* Disabled slider styles */
+.slider-container.disabled .slider-title,
+.slider-container.disabled .slider-labels span {
+  color: #999; /* Grayed out text color */
+}
+
+.slider-container.disabled .stroke-slider {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Buttons container layout */
+.buttons-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin: 20px 0;
+}
+
+/* Calibration container to keep message and button together */
+.calibration-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* Calibration message styles */
+.calibration-status {
+  position: absolute;
+  right: 100%; /* Position to the left of the button */
+  margin-right: 10px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-weight: bold;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.calibration-status.calibrating {
+  background-color: #ffcc00;
+  color: #333;
+  border: 1px solid #e6b800;
+}
+
+.calibration-status.complete {
+  background-color: #4CAF50;
+  color: white;
+  border: 1px solid #45a049;
+}
+
+.calibration-status.hidden {
+  display: none;
+}
+
+/* Ensure each button container takes equal space */
+.record-button-container,
+.calibration-container,
+.standby-button-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}

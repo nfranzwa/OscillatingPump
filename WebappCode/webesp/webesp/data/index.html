@@ -83,11 +83,12 @@
     <div class="record-button-container">
       <button onclick="toggleRecording(this)" class="record-button" id="record-button" disabled>Start Recording</button>
     </div>
-    <div id="record-message" class="hidden"></div>
-    <div class="calibration-button-container">
+    
+    <div class="calibration-container">
+      <div id="calibration-message" class="calibration-status hidden"></div>
       <button onclick="calibrating(this)" class="calibration-button" id="calibration-button">Calibrate</button>
     </div>
-    <div id="calibration-message" class="hidden message">Calibration message</div>
+    
     <div class="standby-button-container">
       <button onclick="standby(this)" class="standby-button" id="standby-button" disabled>Standby Mode</button>
     </div>

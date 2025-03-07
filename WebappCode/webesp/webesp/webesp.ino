@@ -12,12 +12,12 @@
 
 HardwareSerial mySerial(2);
 
-
+/*
 const char *ssid = "ESP32";
 const char *password = "ucsdpumpguest";
-/*
+*/
 const char *ssid = "Asian Crew";
-const char *password = "Agastulate";*/
+const char *password = "Agastulate";
 
 String calibrationstate = "0";
 
@@ -55,12 +55,13 @@ void initLittleFS() {
 }
 
 void initWiFi() {
+  /*
   WiFi.softAP(ssid, password);
   delay(100);
   IPAddress Ip(192, 168, 1, 85);
   IPAddress NMask(255, 255, 255, 0);
   WiFi.softAPConfig(Ip, Ip, NMask);
-  /*
+  */
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   //Serial.println(cmH20)
@@ -70,7 +71,6 @@ void initWiFi() {
     delay(1000);
   }
   Serial.println(WiFi.localIP());
-  */
   IPAddress IP = WiFi.softAPIP();
   Serial.print("AP IP address: ");
   Serial.println(IP);
@@ -82,7 +82,7 @@ void setup() {
   initWiFi();
   Serial.println();
   initLittleFS();
-  mySerial.begin(32, SERIAL_8N1, RXD1, TXD1);
+  mySerial.begin(115200, SERIAL_8N1, RXD1, TXD1);
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
     request->send(LittleFS, "/index.html", "text/html");
@@ -232,23 +232,21 @@ void loop() {
       events.send(calibrationstate.c_str(), "calstate", millis());
       lastTime = millis();
     }
-  } else {
-    Serial.println("Not reaching");
   }
 
 
   mySerial.print(MinPresValfloat);
-  mySerial.print(", ");
+  mySerial.print(",");
   mySerial.print(MaxPresValfloat);
-  mySerial.print(", ");
+  mySerial.print(",");
   mySerial.print(SustValfloat);
-  mySerial.print(", ");
+  mySerial.print(",");
   mySerial.print(resttimefloat);
-  mySerial.print(", ");
+  mySerial.print(",");
   mySerial.print(attacktimefloat);
-  mySerial.print(", ");
+  mySerial.print(",");
   mySerial.print(calibrationfloat);
-  mySerial.print(", ");
+  mySerial.print(",");
   mySerial.print(desiredposfloat);
   mySerial.print("\n");
   delay(100);
