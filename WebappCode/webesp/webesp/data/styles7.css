@@ -325,19 +325,18 @@ input:checked + .slider:before {
   transform: translateX(25px);
 }
 
-/* #record-message {
-  font-size: 18px;
-  font-weight: 600;
-  color: #2c3e50;
-  background: #ecf0f1;
-  padding: 10px 10px;
-  border-radius: 5px;
-  box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
-  transition: opacity 0.3s ease;
-  text-align: center;
+/* Add this to your existing styles7.css file */
+
+.slider-container.disabled .slider-title,
+.slider-container.disabled .slider-labels span {
+  color: #999; /* Grayed out text color */
 }
- */
-/* Hide element when there is no message */
+
+.slider-container.disabled .stroke-slider {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .hidden {
   display: none;
 }
