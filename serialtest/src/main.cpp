@@ -26,17 +26,6 @@ int num2;
 String serialInput; // this is for the computer serial
 bool printVals=false;
 void loop() {
-  if(Serial.available()){
-    serialInput=Serial.readStringUntil('\n');
-    //if there's a new message that matches, rewrite the variables
-    if (sscanf(serialInput.c_str(), "%f,%d\n", &num1, &num2) == 2) {
-        // Successfully parsed the message
-        Serial.printf("Updated: num1 = %-4.4f,num2 = %d\n",num1,num2);
-    }
-    if (serialInput.startsWith("Toggle")){
-        printVals=!printVals;
-    }
-  }
   // Check if data is available to read from Serial1 (RXD1 and TXD1)
   if (Serial1.available()) {
     // Read incoming data from Serial1
@@ -53,6 +42,17 @@ void loop() {
   }
   else{
     Serial.println("S1;Nothing back");
+  }
+  if(Serial.available()){
+    serialInput=Serial.readStringUntil('\n');
+    //if there's a new message that matches, rewrite the variables
+    if (sscanf(serialInput.c_str(), "%f,%d\n", &num1, &num2) == 2) {
+        // Successfully parsed the message
+        Serial.printf("Updated: num1 = %-4.4f,num2 = %d\n",num1,num2);
+    }
+    if (serialInput.startsWith("Toggle")){
+        printVals=!printVals;
+    }
   }
   Serial1.printf("%f,%d\n",num1,num2);
   // Optionally, send a debug message periodically to show the loop is running
