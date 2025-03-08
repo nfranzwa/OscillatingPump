@@ -18,17 +18,51 @@ struct SharedData {
     int value_current;      // Current value of the parameter
     String err_msg="";
     float pmap[4095]={-1.0};       // pressure mapped onto each position
-    //0: not calibrated, 1: calibrating, 2: calibrated
+    /*
+    0: not calibrated
+    1: calibrating
+    2: calibrated, automatic
+    3: manual
+    4: error
+    */
     int calibration_state=2;
     int PWM_manual;
     int PWM_c_min=0;
     int PWM_c_max=4095;
+    int PWM_current;
+    //TODO: correction code;
+    /*
+    wave generation must interface with following vars:
+    - last_remembered_min_pos
+    - min-max offset obtained from calibration values (aka pmap)
+    Generate wave on
+    - feedback_min_pos_remembered 
+    - feedback_min_pos_remembered +min_max_offset_from_calibration
+    In the loop:
+    @ the beginning of each Attack:
+    - remember the highest position below min pressure;
+    @ the beginning of each Decay (optional):
+    - remember lowest position above max pressure;
 
+    */
+    //updated to be PWM_c_min during calibration=1, stage 2
+    // TODO: this value is updated by wavegen.cpp
+    int PWM_last_min=0;
+    // TODO: update this value from TF_wavegen
+    int PWM_offset=100;
     float P_min=1.0;
     float P_max=6.0; 
     //based on sensor specs
 
     float P_test;
+    /*
+    0: not calibrated
+    1: calibrating
+    2: calibrated, automatic
+    3: manual
+    4: error
+    */
+    int STATUS_PINS[5] ={1,2,3,4,5};
 };
 
 extern SharedData sharedData;  // Declare the global instance of SharedData

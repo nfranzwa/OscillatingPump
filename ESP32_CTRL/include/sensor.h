@@ -44,4 +44,6 @@ class PSensor {
         lowpass_filter LPF=lowpass_filter(2.0);
         // void sensor_debug(bool debug=false);
 };
+int mapPos(float P_target);
+
 #endif

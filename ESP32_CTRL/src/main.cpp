@@ -17,11 +17,11 @@ bool useLCD     = true;
 
 SharedData sharedData;
 String opt_name[] = {"Attack", "Sustain", "Decay", "Rest"};
-int ASDR[4] = {1000,1000,800,800};
+int ASDR[4] = {1000,2000,100,1500};
 // String opt_name[] = {"1","2","3","4"};
 
 //task handles
-TaskHandle_t TH_sensor, TH_wavegen, TH_lcd, TH_ui, TH_motor=nullptr;
+TaskHandle_t TH_sensor, TH_wavegen, TH_lcd, TH_ui, TH_statusLED, TH_motor=nullptr;
 TaskHandle_t TH_calibrate,TH_talk2web, TH_ptest=nullptr;
 // task funct prototypes
 void TF_sensor(void *pvParams);
@@ -32,6 +32,7 @@ void TF_motor(void *pvParams);
 void TF_calibrate(void *pvParams);
 void TF_talk2web(void *pvParams);
 void TF_ptest(void *pvParams);
+void TF_status_LED(void *pvParams);
 
 // HardwareSerial Serial2(2);
 HardwareSerial mySerial(1);
@@ -47,14 +48,14 @@ MotorControl motor(MIGHTY_ZAP_RX,MIGHTY_ZAP_TX,MIGHTY_ZAP_EN);
 
 void setup() {
     Serial.begin(115200);
-    Serial2.begin(32, SERIAL_8N1, MIGHTY_ZAP_RX, MIGHTY_ZAP_TX);
+    Serial2.begin(115200, SERIAL_8N1, MIGHTY_ZAP_RX, MIGHTY_ZAP_TX);
     Wire.begin();
     mySerial.begin(115200, SERIAL_8N1,RXD1,TXD1);
     
     // pinMode(P_PIN_OUT,OUTPUT); // physical pin out for pressure
     Wire.beginTransmission(I2C_ADDRESS);
     if(Wire.endTransmission()==0) Serial.println("Pressure sensor found at 0x28");
-    else Serial.println("sensor not found, check wiring"); 
+    else Serial.println("sensor not found, check wiring");
     // digitalWrite(P_PIN_OUT,LOW);
     sharedData.PWM_min = 100;
     sharedData.PWM_max = 4095;
@@ -79,15 +80,16 @@ void setup() {
     ui.setLCD(&lcd);
     
     // create tasks
-    xTaskCreatePinnedToCore(TF_sensor   ,"Sensor Task"  ,4000, &sensor1, 2, &TH_sensor , 0);
-    xTaskCreatePinnedToCore(TF_wavegen  ,"Wavegen Task" ,2000, &wave   , 1, &TH_wavegen, 0);
-    xTaskCreatePinnedToCore(TF_lcd      ,"LCD Task"     ,4000, &lcd    , 1, &TH_lcd    , 1);
-    xTaskCreatePinnedToCore(TF_ui       ,"UI Task"      ,4000, &ui     , 1, &TH_ui     , 0);
-    //constantly running pressure map function?
-    xTaskCreatePinnedToCore(TF_talk2web ,"Web Comm Task",90000, nullptr, 2, &TH_talk2web,0);
-    xTaskCreatePinnedToCore(TF_calibrate,"Calib. Task"  ,4000, &motor  , 0, &TH_calibrate,0);
-    xTaskCreatePinnedToCore(TF_motor    ,"Motor Task"   ,4000, &motor  , 0, &TH_motor  ,0);
-    xTaskCreatePinnedToCore(TF_ptest    ,"testP Task"   ,2000, nullptr , 0, &TH_ptest  ,0);
+    xTaskCreatePinnedToCore(TF_sensor   ,"Sensor Task"  ,4000   , &sensor1, 2, &TH_sensor , 0);
+    xTaskCreatePinnedToCore(TF_wavegen  ,"Wavegen Task" ,2000   , &wave   , 1, &TH_wavegen, 0);
+    xTaskCreatePinnedToCore(TF_lcd      ,"LCD Task"     ,4000   , &lcd    , 1, &TH_lcd    , 1);
+    xTaskCreatePinnedToCore(TF_ui       ,"UI Task"      ,4000   , &ui     , 1, &TH_ui     , 0);
+    xTaskCreatePinnedToCore(TF_status_LED,"statLED Task",2000   , nullptr , 0, &TH_statusLED,0);
+    xTaskCreatePinnedToCore(TF_talk2web ,"Web Comm Task",100000 , nullptr , 2, &TH_talk2web,0);
+    xTaskCreatePinnedToCore(TF_calibrate,"Calib. Task"  ,6000   , &motor  , 0, &TH_calibrate,0);
+    xTaskCreatePinnedToCore(TF_motor    ,"Motor Task"   ,4000   , &motor  , 0, &TH_motor  ,0);
+    xTaskCreatePinnedToCore(TF_ptest    ,"testP Task"   ,2000   , nullptr , 0, &TH_ptest  ,0);
+
 }
 
 void loop() {

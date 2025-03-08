@@ -3,6 +3,7 @@
 #include "sharedData.h"
 #include <Wire.h>
 #include <filter_lib.h>
+#include <motorcontrol.h>
 
 void PSensor::begin(){
     analogReadResolution(12); //default 12 bits (0~4095)
@@ -161,6 +162,62 @@ void TF_sensor(void *pvParams){
         sharedData.P_current=sensor->filter(sensor->readPressure());
         // Serial.printf("Sensor data:%-5f\n",sharedData.P_current);
         vTaskDelay(pdMS_TO_TICKS(15)); //66.7Hz
+    }
+}
+
+void mapPressure(void* pvParams) {
+    MotorControl* motor= (MotorControl*) pvParams;
+    for(;;){
+      sharedData.pmap[motor->m_zap->presentPosition(ID_NUM)]=sharedData.P_current;
+      vTaskDelay(pdMS_TO_TICKS(33));//30Hz
+    }
+}
+
+
+
+// as long as the target pressure is within the calibration range, run a binary search
+// WARNING: binary search assumes the values sorted (aka monotonic)
+
+/*
+TODO: search only within the indices of [PWM_c_min, PWM_c_max]
+*/
+int mapPos(float P_target) {
+    //only search within the indices between
+    //sharedData.PWM_c_min and sharedData.PWM_c_max
+    if(P_target==sharedData.P_max) return sharedData.PWM_c_max;
+    if(P_target==sharedData.P_min) return sharedData.PWM_c_min;
+    if(P_target<sharedData.P_max || P_target>sharedData.P_min){
+      int left = 0, right = 4094;  // Search space
+      int i=0; // for debugging
+      int closestPos = 0;
+      float minDiff = fabs(sharedData.pmap[0] - P_target);
+      while (left <=right) {
+        int mid = left + (right - left) / 2;
+        float midValue = sharedData.pmap[mid];
+        // Update closest position if current mid is closer
+        float diff = fabs(midValue - P_target);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestPos = mid;
+        }
+  
+        // Move search window
+        if (midValue < P_target) {
+          left = mid + 1;
+        } else {
+          right = mid - 1;
+        }
+        i++; //this is for debugging
+        if(i>12) {
+          Serial.println("Binary search error, too many loops. Returning current guess\n");
+          return closestPos;
+        }
+      }
+      return closestPos;
+    }
+    else{
+      Serial.println("Target pressure out of range, recalibrate");
+      return 3000;
     }
 }
 

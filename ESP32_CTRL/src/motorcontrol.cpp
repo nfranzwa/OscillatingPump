@@ -54,6 +54,9 @@ void MotorControl::begin() {
   Serial.printf("Initial position: %d\n", currentPos);
 }
 
+/*
+only moves motor to target position under specific calibration state
+*/
 void TF_motor(void* pvParams) {
   MotorControl* motor= (MotorControl*) pvParams;
   Serial.println("Motor Task");
@@ -64,62 +67,11 @@ void TF_motor(void* pvParams) {
     if(sharedData.calibration_state==3){
       motor->m_zap->GoalPosition(ID_NUM,4095-sharedData.PWM_manual);
     }
+    sharedData.PWM_current=motor->m_zap->presentPosition(ID_NUM);
     vTaskDelay(pdMS_TO_TICKS(4));
   }
 }
 
-void mapPressure(void* pvParams) {
-  MotorControl* motor= (MotorControl*) pvParams;
-  for(;;){
-    sharedData.pmap[motor->m_zap->presentPosition(ID_NUM)]=sharedData.P_current;
-    vTaskDelay(pdMS_TO_TICKS(5));
-  }
-}
-
-
-// as long as the target pressure is within the calibration range, run a binary search
-// WARNING: binary search assumes the values sorted (aka monotonic)
-int mapPos(float P_target) {
-  if(P_target==sharedData.P_max) return sharedData.PWM_c_max;
-  if(P_target==sharedData.P_min) return sharedData.PWM_c_min;
-  if(P_target<sharedData.P_max || P_target>sharedData.P_min){
-    int left = 0, right = 4094;  // Search space
-    int i=0; // for debugging
-    int closestPos = 0;
-    float minDiff = fabs(sharedData.pmap[0] - P_target);
-    while (left <=right) {
-      int mid = left + (right - left) / 2;
-      float midValue = sharedData.pmap[mid];
-      // Update closest position if current mid is closer
-      float diff = fabs(midValue - P_target);
-      if (diff < minDiff) {
-        minDiff = diff;
-        closestPos = mid;
-      }
-
-      // Move search window
-      if (midValue < P_target) {
-        left = mid + 1;
-      } else {
-        right = mid - 1;
-      }
-      i++; //this is for debugging
-      if(i>12) {
-        Serial.println("Binary search error, too many loops. Returning current guess\n");
-        return closestPos;
-      }
-    }
-    return closestPos;
-  }
-  else{
-    Serial.println("Target pressure out of range, recalibrate");
-    return 3000;
-  }
-}
-
-void resetPMap(){
-  // memcpy(sharedData.pmap,something to change the values)
-}
 /*
 calibrate pressure mappings and motor
 this means remembering
@@ -179,6 +131,7 @@ void TF_calibrate(void* pvParams){
           else{
             sharedData.PWM_c_min=4095-motor->m_zap->presentPosition(ID_NUM);
             motor->m_zap->GoalPosition(ID_NUM,motor->m_zap->presentPosition(ID_NUM));
+            sharedData.PWM_last_min=sharedData.PWM_c_min;
             stage++;
             Serial.printf("Found min @%d\n",sharedData.PWM_c_min);
           }
