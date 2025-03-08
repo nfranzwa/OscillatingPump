@@ -10,7 +10,7 @@ class PSensor {
         const float V_MAX;
         const float P_MAX;
         const float P_MIN;
-        const int ADC_RESOLUTION;
+        int ADC_RESOLUTION=4095;
         String SENSOR_TYPE;
         // const int I2C_ADDRESS=0x27;
         const int I2C_ADDRESS=0x28;
@@ -41,7 +41,7 @@ class PSensor {
         // float readPressureABP();
         float maptopsi(int value);
         float filter(float measurement);
-        lowpass_filter LPF=lowpass_filter(2.0);
+        lowpass_filter LPF=lowpass_filter(1.5);
         // void sensor_debug(bool debug=false);
 };
 int mapPos(float P_target);

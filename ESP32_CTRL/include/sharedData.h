@@ -6,7 +6,6 @@
 // Shared data structure
 struct SharedData {
     float P_current;        // Current pressure reading
-    float P_target;         // Target pressure
     int PWM_value;          // Current PWM value
     int ASDR[4];            // ASDR values (Attack, Sustain, Decay, Rest)
     int cyc_period;         // cycle period in mss
@@ -81,8 +80,8 @@ extern SharedData sharedData;  // Declare the global instance of SharedData
 #define V_SUPPLY    3.3
 #define V_MIN       0.1
 #define V_MAX       3.08
-#define P_MIN       0.0
-#define P_MAX       10.0 // max pressure sensor output
+#define P_MIN       -1.2
+#define P_MAX       1.2 // max pressure sensor output
 #define ADC_RES     4095
 
 //display

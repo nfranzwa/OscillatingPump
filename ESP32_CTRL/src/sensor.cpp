@@ -52,6 +52,7 @@ float PSensor::readPressure(){
         Wire.requestFrom(I2C_ADDRESS, 7); //7 byte total
         vTaskDelay(5);
         if(Wire.available()>=7){
+            // Serial.println("Sensor found?");
             int i=0;
             Wire.requestFrom(I2C_ADDRESS, 7);
             for (i = 0; i < 7; i++)
@@ -62,36 +63,6 @@ float PSensor::readPressure(){
             pressure = ((press_counts - outputMin) * (pmax - pmin)) / (outputMax - outputMin) + pmin;
             return pressure; // PSI VALUE
         }
-        /*
-        if(Wire.available()>=7){
-            Serial.println("Sensor msg received\n");
-            byte status = Wire.read();
-            // Read pressure bytes (24-bit value)
-            byte pressureHigh = Wire.read();
-            byte pressureMid = Wire.read();
-            byte pressureLow = Wire.read();
-            unsigned long pressureCounts = ((unsigned long)pressureHigh << 16) | 
-                                            ((unsigned long)pressureMid << 8) | 
-                                            (unsigned long)pressureLow;
-            
-            // Read temperature bytes (24-bit value)
-            byte tempHigh = Wire.read();
-            byte tempMid = Wire.read();
-            byte tempLow = Wire.read();
-            unsigned long tempCounts = ((unsigned long)tempHigh << 16) | 
-                                        ((unsigned long)tempMid << 8) | 
-                                        (unsigned long)tempLow;
-            
-            // Calculate pressure using transfer function
-            double pressure = ((pressureCounts - outputMin) * (pressureMax - pressureMin)) / 
-                        (outputMax - outputMin) + pressureMin;
-            
-            // Calculate temperature (from -50째C to 150째C range)
-            double temperature = ((tempCounts * 200.0) / 16777215.0) - 50.0;
-            
-            return pressure;
-        }
-        */
         else{
             Serial.println("No msg read\n");
             return P_MAX;
@@ -159,6 +130,7 @@ void TF_sensor(void *pvParams){
     PSensor* sensor =(PSensor*) pvParams;
     for(;;){
         // WARNING: remember that I2C sensor readings are in PSI
+
         sharedData.P_current=sensor->filter(sensor->readPressure());
         // Serial.printf("Sensor data:%-5f\n",sharedData.P_current);
         vTaskDelay(pdMS_TO_TICKS(15)); //66.7Hz
@@ -170,54 +142,6 @@ void mapPressure(void* pvParams) {
     for(;;){
       sharedData.pmap[motor->m_zap->presentPosition(ID_NUM)]=sharedData.P_current;
       vTaskDelay(pdMS_TO_TICKS(33));//30Hz
-    }
-}
-
-
-
-// as long as the target pressure is within the calibration range, run a binary search
-// WARNING: binary search assumes the values sorted (aka monotonic)
-
-/*
-TODO: search only within the indices of [PWM_c_min, PWM_c_max]
-*/
-int mapPos(float P_target) {
-    //only search within the indices between
-    //sharedData.PWM_c_min and sharedData.PWM_c_max
-    if(P_target==sharedData.P_max) return sharedData.PWM_c_max;
-    if(P_target==sharedData.P_min) return sharedData.PWM_c_min;
-    if(P_target<sharedData.P_max || P_target>sharedData.P_min){
-      int left = 0, right = 4094;  // Search space
-      int i=0; // for debugging
-      int closestPos = 0;
-      float minDiff = fabs(sharedData.pmap[0] - P_target);
-      while (left <=right) {
-        int mid = left + (right - left) / 2;
-        float midValue = sharedData.pmap[mid];
-        // Update closest position if current mid is closer
-        float diff = fabs(midValue - P_target);
-        if (diff < minDiff) {
-          minDiff = diff;
-          closestPos = mid;
-        }
-  
-        // Move search window
-        if (midValue < P_target) {
-          left = mid + 1;
-        } else {
-          right = mid - 1;
-        }
-        i++; //this is for debugging
-        if(i>12) {
-          Serial.println("Binary search error, too many loops. Returning current guess\n");
-          return closestPos;
-        }
-      }
-      return closestPos;
-    }
-    else{
-      Serial.println("Target pressure out of range, recalibrate");
-      return 3000;
     }
 }
 

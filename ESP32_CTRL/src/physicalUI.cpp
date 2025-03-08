@@ -6,9 +6,10 @@ void PhysicalUI::begin() {
     pinMode(CLK, INPUT);
     pinMode(DT, INPUT);
     pinMode(SW, INPUT_PULLUP);
-    for(int i=0;i<4;i++){
+    
+    /* for(int i=0;i<4;i++){
         pinMode(sharedData.STATUS_PINS[i],OUTPUT);
-    }
+    } */
     last_s_CLK = digitalRead(CLK);
 }
 

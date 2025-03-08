@@ -57,16 +57,18 @@ void setup() {
     if(Wire.endTransmission()==0) Serial.println("Pressure sensor found at 0x28");
     else Serial.println("sensor not found, check wiring");
     // digitalWrite(P_PIN_OUT,LOW);
-    sharedData.PWM_min = 100;
+    sharedData.PWM_min = 10;
     sharedData.PWM_max = 4095;
     sharedData.PWM_value= 200;
-    delay(100);
-    // for (int i = 0; i < 10; i++) {
-    //     digitalWrite(P_PIN_OUT, HIGH);
-    //     digitalWrite(P_PIN_OUT, LOW);
-    //   }
-    
     memcpy(sharedData.ASDR,ASDR,4*sizeof(int));
+    // test values for wave generation w/o calibration
+    sharedData.PWM_c_min=100;
+    sharedData.PWM_c_max=3000;
+    sharedData.P_min=0.5;
+    sharedData.P_max=1.6;
+    for (int i = 100; i <= 3000; i++){
+        sharedData.pmap[i] = (i - 100) * (1.7f / (3000 - 100));
+    }
     ui.begin();
     ui.setOptions(sharedData.ASDR, opt_name, 100);
     sensor1.begin();
@@ -78,17 +80,16 @@ void setup() {
     lcd.backlight();
     lcd.setBacklight(128);
     ui.setLCD(&lcd);
-    
     // create tasks
     xTaskCreatePinnedToCore(TF_sensor   ,"Sensor Task"  ,4000   , &sensor1, 2, &TH_sensor , 0);
-    xTaskCreatePinnedToCore(TF_wavegen  ,"Wavegen Task" ,2000   , &wave   , 1, &TH_wavegen, 0);
+    xTaskCreatePinnedToCore(TF_wavegen  ,"Wavegen Task" ,6000   , &wave   , 1, &TH_wavegen, 0);
     xTaskCreatePinnedToCore(TF_lcd      ,"LCD Task"     ,4000   , &lcd    , 1, &TH_lcd    , 1);
     xTaskCreatePinnedToCore(TF_ui       ,"UI Task"      ,4000   , &ui     , 1, &TH_ui     , 0);
-    xTaskCreatePinnedToCore(TF_status_LED,"statLED Task",2000   , nullptr , 0, &TH_statusLED,0);
-    xTaskCreatePinnedToCore(TF_talk2web ,"Web Comm Task",100000 , nullptr , 2, &TH_talk2web,0);
-    xTaskCreatePinnedToCore(TF_calibrate,"Calib. Task"  ,6000   , &motor  , 0, &TH_calibrate,0);
+    // xTaskCreatePinnedToCore(TF_status_LED,"statLED Task",4000   , nullptr , 0, &TH_statusLED,0);
+    xTaskCreatePinnedToCore(TF_talk2web ,"Web Comm Task",90000 , nullptr , 2, &TH_talk2web,0);
+    xTaskCreatePinnedToCore(TF_calibrate,"Calib. Task"  ,8000   , &motor  , 0, &TH_calibrate,0);
     xTaskCreatePinnedToCore(TF_motor    ,"Motor Task"   ,4000   , &motor  , 0, &TH_motor  ,0);
-    xTaskCreatePinnedToCore(TF_ptest    ,"testP Task"   ,2000   , nullptr , 0, &TH_ptest  ,0);
+    // xTaskCreatePinnedToCore(TF_ptest    ,"testP Task"   ,2000   , nullptr , 0, &TH_ptest  ,0);
 
 }
 
@@ -107,13 +108,13 @@ void loop() {
 
 void TF_talk2web(void* pvParams){
     // if theres a message sent to the serial port
-    Serial.println("Start web comm task");
+    Serial.println("Start T2W Task");
     for(;;){
         Serial.println("Hewwo?");
         if(mySerial.available()){
             String msg = mySerial.readStringUntil('\n');
             // String msg="help";
-            vTaskDelay(100);
+            vTaskDelay(50);
             Serial.println("Received "+msg);
             //if the new message matches format, rewrite the variables
             //MinP, MaxP, S, R, A/D, calibration_state, manual position
