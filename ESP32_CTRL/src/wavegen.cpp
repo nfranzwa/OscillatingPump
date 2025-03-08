@@ -95,13 +95,11 @@ void TF_wavegen(void *pvParameters) {
         if position of syringe for new desired position
         is less than the PWM_last_min, update the last_min 
         */
-        Serial.println("waveform loop");
+        // Serial.println("waveform loop");
         if(sharedData.calibration_state==2){
-            Serial.println("im here");
-            int num=mapPos(sharedData.P_current);
-            Serial.println("im still standing");
             if(mapPos(sharedData.P_min)<sharedData.PWM_last_min){
                 // so if we want to move further back
+                Serial.printf("target below current P_min");
                 sharedData.PWM_last_min=mapPos(sharedData.P_min);
             }
             // then set PWM_last_min to be the map from pmap
@@ -109,17 +107,19 @@ void TF_wavegen(void *pvParameters) {
             // PWM_offset=pmap of P_max - pmap of P_min
             if(sharedData.PWM_offset+sharedData.PWM_last_min>4095){
                 sharedData.calibration_state=4;
+                Serial.println("movement would be out of range");
             }
             else{ // safe range of values;
                 //use pwm_last_min, offset value calculated
                 sharedData.PWM_min=sharedData.PWM_last_min;
                 sharedData.PWM_max=sharedData.PWM_last_min+sharedData.PWM_offset;
             }
+            Serial.printf("Floor:%d\tOffset:%d\n",sharedData.PWM_last_min,sharedData.PWM_offset);
             //update function does the handshake to update wave object's values.
             wave->update(sharedData.ASDR, sharedData.PWM_min, sharedData.PWM_max);
             sharedData.PWM_value=wave->generatePWM();
         }
-        vTaskDelay(pdMS_TO_TICKS(5));
+        vTaskDelay(pdMS_TO_TICKS(8));
     }
 }
 
@@ -127,7 +127,6 @@ void TF_wavegen(void *pvParameters) {
 // WARNING: binary search assumes the values sorted (aka monotonic)
 int mapPos(float P_target) {
     // Ensure target pressure is within the calibration range
-    Serial.printf("Target:%f\tP_min:%f\tP_max%f\n",P_target,sharedData.P_min,sharedData.P_max);
     if (P_target > sharedData.P_max || P_target < sharedData.P_min) {
         Serial.println("Target pressure out of range, recalibrate");
         return sharedData.PWM_c_min;
@@ -182,5 +181,6 @@ int mapPos(float P_target) {
             return closestPos;
         }
     }
+    Serial.printf("T_P:%f\tP_min:%f\tP_max%f\tT_PWM:%f\n",P_target,sharedData.P_min,sharedData.P_max,closestPos);
     return closestPos;
 }

@@ -8,6 +8,7 @@
 #include <WiFi.h>
 #include "sharedData.h"
 #include <MightyZap.h>
+#include "esp_int_wdt.h"
 
 bool debug      = true; // output to COM port
 bool useSensor1 = true;
@@ -51,20 +52,21 @@ void setup() {
     Serial2.begin(115200, SERIAL_8N1, MIGHTY_ZAP_RX, MIGHTY_ZAP_TX);
     Wire.begin();
     mySerial.begin(115200, SERIAL_8N1,RXD1,TXD1);
-    
     // pinMode(P_PIN_OUT,OUTPUT); // physical pin out for pressure
-    Wire.beginTransmission(I2C_ADDRESS);
-    if(Wire.endTransmission()==0) Serial.println("Pressure sensor found at 0x28");
-    else Serial.println("sensor not found, check wiring");
+    // moved to sensor.cpp 
+    // Wire.beginTransmission(I2C_ADDRESS);
+    // if(Wire.endTransmission()==0) Serial.println("Pressure sensor found at 0x28");
+    // else Serial.println("sensor not found, check wiring");
     // digitalWrite(P_PIN_OUT,LOW);
+    sharedData.calibration_state=1;
     sharedData.PWM_min = 10;
     sharedData.PWM_max = 4095;
     sharedData.PWM_value= 200;
     memcpy(sharedData.ASDR,ASDR,4*sizeof(int));
     // test values for wave generation w/o calibration
-    sharedData.PWM_c_min=100;
+    sharedData.PWM_c_min=000;
     sharedData.PWM_c_max=3000;
-    sharedData.P_min=0.5;
+    sharedData.P_min=1.0;
     sharedData.P_max=1.6;
     for (int i = 100; i <= 3000; i++){
         sharedData.pmap[i] = (i - 100) * (1.7f / (3000 - 100));
@@ -82,11 +84,11 @@ void setup() {
     ui.setLCD(&lcd);
     // create tasks
     xTaskCreatePinnedToCore(TF_sensor   ,"Sensor Task"  ,4000   , &sensor1, 2, &TH_sensor , 0);
+    xTaskCreatePinnedToCore(TF_talk2web ,"Web Comm Task",140000 , nullptr , 3, &TH_talk2web,0);
     xTaskCreatePinnedToCore(TF_wavegen  ,"Wavegen Task" ,6000   , &wave   , 1, &TH_wavegen, 0);
-    xTaskCreatePinnedToCore(TF_lcd      ,"LCD Task"     ,4000   , &lcd    , 1, &TH_lcd    , 1);
-    xTaskCreatePinnedToCore(TF_ui       ,"UI Task"      ,4000   , &ui     , 1, &TH_ui     , 0);
+    xTaskCreatePinnedToCore(TF_lcd      ,"LCD Task"     ,5000   , &lcd    , 1, &TH_lcd    , 1);
+    xTaskCreatePinnedToCore(TF_ui       ,"UI Task"      ,6000   , &ui     , 1, &TH_ui     , 0);
     // xTaskCreatePinnedToCore(TF_status_LED,"statLED Task",4000   , nullptr , 0, &TH_statusLED,0);
-    xTaskCreatePinnedToCore(TF_talk2web ,"Web Comm Task",90000 , nullptr , 2, &TH_talk2web,0);
     xTaskCreatePinnedToCore(TF_calibrate,"Calib. Task"  ,8000   , &motor  , 0, &TH_calibrate,0);
     xTaskCreatePinnedToCore(TF_motor    ,"Motor Task"   ,4000   , &motor  , 0, &TH_motor  ,0);
     // xTaskCreatePinnedToCore(TF_ptest    ,"testP Task"   ,2000   , nullptr , 0, &TH_ptest  ,0);
@@ -110,11 +112,11 @@ void TF_talk2web(void* pvParams){
     // if theres a message sent to the serial port
     Serial.println("Start T2W Task");
     for(;;){
-        Serial.println("Hewwo?");
         if(mySerial.available()){
+            Serial.println("start reading");
+            vTaskDelay(pdMS_TO_TICKS(10));
             String msg = mySerial.readStringUntil('\n');
             // String msg="help";
-            vTaskDelay(50);
             Serial.println("Received "+msg);
             //if the new message matches format, rewrite the variables
             //MinP, MaxP, S, R, A/D, calibration_state, manual position
@@ -131,48 +133,7 @@ void TF_talk2web(void* pvParams){
             Serial.printf("Pmin%-2.2f Pmax%-2.2f A/D:%d S:%d R%d\n",
                 sharedData.P_min,sharedData.P_max,sharedData.ASDR[0],sharedData.ASDR[1],sharedData.ASDR[3]);    
             }
-            else{
-                Serial.println("msg doesn't match\n");
-            }
-            /*
-            char inputArray[msg.length() + 1];  // Create a char array of the correct size
-            msg.toCharArray(inputArray, sizeof(inputArray));
-            char *token = strtok(inputArray, ",");
-            if (token != NULL) sharedData.P_min = atoi(token);
-            token = strtok(NULL, ",");
-            if (token != NULL) sharedData.P_max = atoi(token);
-            token = strtok(NULL, ",");
-            // Sustain
-            if (token != NULL) sharedData.ASDR[1] = atoi(token);
-            token = strtok(NULL, ",");
-            // Rest
-            if (token != NULL) sharedData.ASDR[3] = atoi(token);
-            token = strtok(NULL, ",");
-            // Attack and Decay
-            if (token != NULL){
-                sharedData.ASDR[0]= atoi(token);
-                sharedData.ASDR[2]= sharedData.ASDR[0];
-            }
-            Serial.printf("Pmin%-2.2f Pmax%-2.2f A/D:%d S:%d R%d\n",
-                sharedData.P_min,sharedData.P_max,sharedData.ASDR[0],sharedData.ASDR[1],sharedData.ASDR[3]);
-            */
-           
         }
-        else{
-            Serial.println("is anyone hewe?");
-        }
-        //send data to the web server:
-        
-        // mySerial.print("1.0,");
-        // Prepare the formatted string
-        // String dataToSend = String(sharedData.P_current) + "," + String(sharedData.calibration_state) + "\n";
-
-        // // Convert the string to a C-style string (const char*)
-        // const char* data = dataToSend.c_str();
-
-        // // Send the string using mySerial.write(), one byte at a time
-        // mySerial.write(reinterpret_cast<const uint8_t*>(data), dataToSend.length());
-
         mySerial.printf("%f,%d\n",sharedData.P_current ,sharedData.calibration_state);
         Serial.println("T2W end of loop");
         vTaskDelay(pdMS_TO_TICKS(100));

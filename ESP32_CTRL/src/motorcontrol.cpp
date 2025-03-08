@@ -98,7 +98,7 @@ void TF_calibrate(void* pvParams){
   //start mapping, and then move until it hits max desired pressure
   for(;;){
 
-    //Serial.printf("Calibration state:%d\t",sharedData.calibration_state);
+    Serial.printf("Calibration state:%d\t",sharedData.calibration_state);
     if(sharedData.calibration_state==0) stage=0;
     if(sharedData.calibration_state==1){
       switch (stage){
