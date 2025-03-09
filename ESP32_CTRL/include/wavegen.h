@@ -31,4 +31,5 @@ public:
     int generatePWM();
     void update(int* ADSR,int min_PWM,int max_PWM,bool debug=false);
 };
+int mapPos(float P_target);
 #endif

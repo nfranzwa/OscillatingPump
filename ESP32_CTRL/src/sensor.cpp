@@ -3,6 +3,7 @@
 #include "sharedData.h"
 #include <Wire.h>
 #include <filter_lib.h>
+#include <motorcontrol.h>
 
 void PSensor::begin(){
     analogReadResolution(12); //default 12 bits (0~4095)
@@ -51,6 +52,7 @@ float PSensor::readPressure(){
         Wire.requestFrom(I2C_ADDRESS, 7); //7 byte total
         vTaskDelay(5);
         if(Wire.available()>=7){
+            // Serial.println("Sensor found?");
             int i=0;
             Wire.requestFrom(I2C_ADDRESS, 7);
             for (i = 0; i < 7; i++)
@@ -61,36 +63,6 @@ float PSensor::readPressure(){
             pressure = ((press_counts - outputMin) * (pmax - pmin)) / (outputMax - outputMin) + pmin;
             return pressure; // PSI VALUE
         }
-        /*
-        if(Wire.available()>=7){
-            Serial.println("Sensor msg received\n");
-            byte status = Wire.read();
-            // Read pressure bytes (24-bit value)
-            byte pressureHigh = Wire.read();
-            byte pressureMid = Wire.read();
-            byte pressureLow = Wire.read();
-            unsigned long pressureCounts = ((unsigned long)pressureHigh << 16) | 
-                                            ((unsigned long)pressureMid << 8) | 
-                                            (unsigned long)pressureLow;
-            
-            // Read temperature bytes (24-bit value)
-            byte tempHigh = Wire.read();
-            byte tempMid = Wire.read();
-            byte tempLow = Wire.read();
-            unsigned long tempCounts = ((unsigned long)tempHigh << 16) | 
-                                        ((unsigned long)tempMid << 8) | 
-                                        (unsigned long)tempLow;
-            
-            // Calculate pressure using transfer function
-            double pressure = ((pressureCounts - outputMin) * (pressureMax - pressureMin)) / 
-                        (outputMax - outputMin) + pressureMin;
-            
-            // Calculate temperature (from -50째C to 150째C range)
-            double temperature = ((tempCounts * 200.0) / 16777215.0) - 50.0;
-            
-            return pressure;
-        }
-        */
         else{
             Serial.println("No msg read\n");
             return P_MAX;
@@ -158,9 +130,18 @@ void TF_sensor(void *pvParams){
     PSensor* sensor =(PSensor*) pvParams;
     for(;;){
         // WARNING: remember that I2C sensor readings are in PSI
+
         sharedData.P_current=sensor->filter(sensor->readPressure());
         // Serial.printf("Sensor data:%-5f\n",sharedData.P_current);
         vTaskDelay(pdMS_TO_TICKS(15)); //66.7Hz
+    }
+}
+
+void mapPressure(void* pvParams) {
+    MotorControl* motor= (MotorControl*) pvParams;
+    for(;;){
+      sharedData.pmap[motor->m_zap->presentPosition(ID_NUM)]=sharedData.P_current;
+      vTaskDelay(pdMS_TO_TICKS(33));//30Hz
     }
 }
 

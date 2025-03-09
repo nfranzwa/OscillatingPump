@@ -6,6 +6,10 @@ void PhysicalUI::begin() {
     pinMode(CLK, INPUT);
     pinMode(DT, INPUT);
     pinMode(SW, INPUT_PULLUP);
+    
+    /* for(int i=0;i<4;i++){
+        pinMode(sharedData.STATUS_PINS[i],OUTPUT);
+    } */
     last_s_CLK = digitalRead(CLK);
 }
 
@@ -119,6 +123,24 @@ void PhysicalUI::updateLCD(float pressure, float target,bool debug){
     else{}
     */
 }
+/*
+update status LED based on calibration state variable
+    0: not calibrated
+    1: calibrating
+    2: calibrated, automatic
+    3: manual
+    4: error
+*/
+void TF_status_LED(void* pvParams){
+    Serial.println("start status LED task");
+    for(;;){
+        for(int i=0;i<4;i++){
+            if(sharedData.calibration_state==i) digitalWrite(sharedData.STATUS_PINS[i],HIGH);
+            else digitalWrite(sharedData.STATUS_PINS[i],LOW);
+        }
+        vTaskDelay(pdMS_TO_TICKS(150));
+    }
+}
 
 void TF_ui(void* pvParams){
     PhysicalUI* ui= (PhysicalUI*) pvParams;
@@ -135,12 +157,14 @@ void TF_ui(void* pvParams){
 void TF_lcd(void* pvParams){
     LiquidCrystal_I2C* lcd=(LiquidCrystal_I2C*) pvParams;
     for(;;){
+
         lcd->setCursor(0, 0);
         lcd->printf("MODE:%-4s", sharedData.mode_current.c_str());
         lcd->setCursor(0, 1);
         lcd->printf("%-7s:%5d ms", sharedData.param_current.c_str(), sharedData.value_current);
         lcd->setCursor(0, 2);
         lcd->printf("T1:%-4.0f P:%-3.2f psi", (float) sharedData.PWM_value, sharedData.P_current);
+        
         // lcd->setCursor(0,3);
         // lcd->scrollDisplayRight();
         // lcd->printf("%s",(sharedData.err_msg=="")? "                    ":sharedData.err_msg);

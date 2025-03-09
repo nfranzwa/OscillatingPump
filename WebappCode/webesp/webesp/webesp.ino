@@ -74,13 +74,23 @@ void initLittleFS() {
 }
 
 void initWiFi() {
+<<<<<<< HEAD
+=======
+  
+>>>>>>> d5d441a4fd9547b9618e5e78f350dd1b5e6c51e9
   WiFi.softAP(ssid, password);
   delay(100);
-  IPAddress Ip(192, 168, 1, 85);
+  IPAddress IP(192, 168, 1, 85);
   IPAddress NMask(255, 255, 255, 0);
+<<<<<<< HEAD
   WiFi.softAPConfig(Ip, Ip, NMask);
   /*
   WiFi.mode(WIFI_STA);
+=======
+  WiFi.softAPConfig(IP, IP, NMask);
+ 
+  /* WiFi.mode(WIFI_STA);
+>>>>>>> d5d441a4fd9547b9618e5e78f350dd1b5e6c51e9
   WiFi.begin(ssid, password);
   //Serial.println(cmH20)
   Serial.print("Connecting to WiFi ..");
@@ -90,7 +100,8 @@ void initWiFi() {
   }
   */
   Serial.println(WiFi.localIP());
-  IPAddress IP = WiFi.softAPIP();
+  IPAddress IP = WiFi.softAPIP(); */
+
   Serial.print("AP IP address: ");
   Serial.println(IP);
 }

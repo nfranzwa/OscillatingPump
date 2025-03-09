@@ -30,7 +30,6 @@ class MotorControl {
         void updateParameters();
         void readAndPrintSensor();
         void TH_motor(void* pvParams);
-        void mapPressure();
         void resetPMap();
         void calibrate(int state);
     };
