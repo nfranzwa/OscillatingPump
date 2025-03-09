@@ -145,6 +145,47 @@ void mapPressure(void* pvParams) {
     }
 }
 
+void cleanArray(std::array<float,4096>& pmap, int startIdx, int endIdx) {
+    // Skip processing if the range is invalid
+    if (startIdx >= endIdx) return;
+    
+    // First pass: Find the first valid value
+    int firstValid = -1;
+    for (int i = startIdx; i <= endIdx; i++) {
+        if (pmap[i] != -1.0f) {
+            firstValid = i;
+            break;
+        }
+    }
+    
+    // Return if no valid points were found
+    if (firstValid == -1) return;
+    
+    // Second pass: Ensure monotonicity (never decreasing)
+    float currentMax = pmap[firstValid];
+    
+    // Set all invalid entries before firstValid to the first valid value
+    for (int i = startIdx; i < firstValid; i++) {
+        pmap[i] = currentMax;
+    }
+    
+    // Process the rest of the array
+    for (int i = firstValid + 1; i <= endIdx; i++) {
+        if (pmap[i] == -1.0f) {
+            // Replace invalid values with the current maximum
+            pmap[i] = currentMax;
+        } else {
+            // If valid but less than current maximum, update to current maximum
+            if (pmap[i] < currentMax) {
+                pmap[i] = currentMax;
+            } else {
+                // Update current maximum if we found a larger value
+                currentMax = pmap[i];
+            }
+        }
+    }
+}
+
 /*
 Replicate test sensor data according to message sent to serial:
 Feed it pressure value and amount to increment each iteration

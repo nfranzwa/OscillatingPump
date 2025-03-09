@@ -12,7 +12,7 @@ private:
     // int* ASDR_new; // redundant?
     int cyclePeriod;
     int cycleFreq;
-    unsigned long lastCycleStart;
+    unsigned long lastCycleStart=0;
     int PWM_min;
     int PWM_max;
     
@@ -26,7 +26,6 @@ public:
     float getFrequency(){return 1000.0/cyclePeriod;} //frequency in Hz
     int getPeriod(){return ASDR[0]+ASDR[1]+ASDR[2]+ASDR[3];} //period in ms
 
-    void begin();
     void updateParams(int* new_asdr,int pwm_min, int pwm_max);//update the ASDR and PWM range
     int generatePWM();
     void update(int* ADSR,int min_PWM,int max_PWM,bool debug=false);

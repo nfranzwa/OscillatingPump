@@ -9,7 +9,7 @@
 #include "sharedData.h"
 #include <MightyZap.h>
 #include "esp_int_wdt.h"
-
+#include <algorithm>
 bool debug      = false; // output to COM port
 bool useSensor1 = true;
 bool useSensor2 = false;
@@ -19,6 +19,7 @@ bool useLCD     = true;
 SharedData sharedData;
 String opt_name[] = {"Attack", "Sustain", "Decay", "Rest"};
 int ASDR[4] = {1000,2000,100,1500};
+
 // String opt_name[] = {"1","2","3","4"};
 
 //task handles
@@ -58,7 +59,8 @@ void setup() {
     // if(Wire.endTransmission()==0) Serial.println("Pressure sensor found at 0x28");
     // else Serial.println("sensor not found, check wiring");
     // digitalWrite(P_PIN_OUT,LOW);
-    sharedData.calibration_state=2;
+    sharedData.pmap.fill(-1.0);
+    sharedData.calibration_state=0;
     sharedData.PWM_min = 0;
     sharedData.PWM_max = 4095;
     sharedData.PWM_value= 200;
@@ -66,15 +68,14 @@ void setup() {
     // test values for wave generation w/o calibration
     sharedData.PWM_c_min=000;
     sharedData.PWM_c_max=3000;
-    sharedData.P_min=0.5;
-    sharedData.P_max=1.6;
-    for (int i = 100; i <= 3000; i++){
-        sharedData.pmap[i] = (i - 100) * (1.7f / (3000 - 100));
+    sharedData.P_min=0.05;
+    sharedData.P_max=1.0;
+    for (int i =sharedData.PWM_c_min=000; i <= sharedData.PWM_c_max; i++){
+        sharedData.pmap[i] = (i - sharedData.PWM_c_min) * (0.6f / (sharedData.PWM_c_max - sharedData.PWM_c_min));
     }
     ui.begin();
     ui.setOptions(sharedData.ASDR, opt_name, 100);
     sensor1.begin();
-    wave.begin();
     motor.setMotor(&m_zap);
     motor.begin();
     // wave.updateParams(ASDR,sharedData.PWM_min,sharedData.PWM_max);
@@ -98,17 +99,40 @@ void setup() {
 void loop() {
     //FreeRTOS handles task scheduling so this can remain empty
     String serialInput;
-    int value;
+    float value;
     if(Serial.available()){
         serialInput=Serial.readStringUntil('\n');
         //if there's a new message that matches, rewrite the variables
+        if(serialInput.startsWith("debug")){
+            debug=!debug;
+            Serial.printf("Updated: debug=%d",debug);
+            // Consider adding the rest of the debug toggles here
+        }
         if (sscanf(serialInput.c_str(), "mp:%f", &value) == 1) {
             // Successfully parsed the message
             Serial.printf("Updated: test = %-4.4f\n",value);
-            Serial.printf("mapPos(%2.2f)=%d\n",value,mapPos(value));
+            Serial.printf("mapPos(%2.2f)=%d\n",(float) value,mapPos(value));
         }
         if (sscanf(serialInput.c_str(),"c:%d",&sharedData.calibration_state)){
             Serial.printf("MANUAL: Calibration state %d\n",sharedData.calibration_state);
+        }
+        if (serialInput.equals("wave debug")){
+            sharedData.wave_debug=!sharedData.wave_debug;
+            Serial.printf("Updated: wave debug=%d",sharedData.wave_debug);
+        }
+        if (serialInput.equals("cal debug")){
+            sharedData.cal_debug=!sharedData.cal_debug;
+            Serial.printf("Updated: cal debug=%d",sharedData.cal_debug);
+        }
+        if (serialInput.equals("show pm")){
+            int i = 0;
+            for (const float& value : sharedData.pmap) {
+                Serial.printf("Index %-4d: %+2.3f\n", i, value);
+                i++;
+            }
+        }
+        if(sscanf(serialInput.c_str(),"m:%f M:%f",&sharedData.P_min,&sharedData.P_max)){
+            Serial.printf("Updated: Pm=%2.2f, PM=%2.2f\n",sharedData.P_min,sharedData.P_max);
         }
     }
     //otherwise continue changing the sharedData.P_test as normal
@@ -121,11 +145,12 @@ void TF_talk2web(void* pvParams){
     Serial.println("Start T2W Task");
     for(;;){
         if(mySerial.available()){
+            sharedData.prev_state=sharedData.calibration_state;
             // Serial.println("start reading");
             vTaskDelay(pdMS_TO_TICKS(10));
             String msg = mySerial.readStringUntil('\n');
             // String msg="help";
-            // Serial.println("Received "+msg);
+            if(debug) Serial.println("Received "+msg);
             //if the new message matches format, rewrite the variables
             //MinP, MaxP, S, R, A/D, calibration_state, manual position
             
@@ -134,17 +159,23 @@ void TF_talk2web(void* pvParams){
                 &sharedData.ASDR[3],&sharedData.ASDR[0],
                 &sharedData.calibration_state,&sharedData.PWM_manual) == 7
                 ) {
-            sharedData.ASDR[2]= sharedData.ASDR[0];
-            //convert input (H2O) to psi
-            sharedData.P_min=sharedData.P_minH2O/70.307;
-            sharedData.P_max=sharedData.P_maxH2O/70.307;
-            // Successfully parsed the message
-            //print statement for update
-            if(debug){
-                Serial.printf("Pmin%-2.2f Pmax%-2.2f A/D:%d S:%d R%d\n",
-                    sharedData.P_min,sharedData.P_max,sharedData.ASDR[0],sharedData.ASDR[1],sharedData.ASDR[3]);    
-            }
-
+                sharedData.ASDR[2]= sharedData.ASDR[0];
+                if(sharedData.calibration_state==1 && sharedData.prev_state==2){
+                    sharedData.calibration_state=2;
+                    if(debug) Serial.println("Received 1, I was 2");
+                }
+                if(sharedData.calibration_state==3 && sharedData.prev_state==2){
+                    sharedData.calibration_state=3;
+                }
+                //convert input (H2O) to psi
+                sharedData.P_min=sharedData.P_minH2O/70.307;
+                sharedData.P_max=sharedData.P_maxH2O/70.307;
+                // Successfully parsed the message
+                //print statement for update
+                if(debug){
+                    Serial.printf("Pmin%-2.2f Pmax%-2.2f A/D:%d S:%d R%d\n",
+                        sharedData.P_min,sharedData.P_max,sharedData.ASDR[0],sharedData.ASDR[1],sharedData.ASDR[3]);    
+                }
             }
         }
         if(debug){
