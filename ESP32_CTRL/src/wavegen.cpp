@@ -3,14 +3,6 @@
 #include "sharedData.h"
 // #include <sensor.h>
 
-int mapPos(float P_target);
-void WaveGenerator::begin() {
-    // pinMode(PWM_PIN,OUTPUT);
-    ledcSetup(PWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
-    // ledcAttachPin(PWM_PIN, PWM_CHANNEL);
-    lastCycleStart = millis();
-}
-
 int WaveGenerator::generatePWM() {
     unsigned long current_time = millis() - lastCycleStart;
     int CYCLE_TIME = WaveGenerator::getPeriod();
@@ -18,14 +10,7 @@ int WaveGenerator::generatePWM() {
     // basically a rising triangle wave from 0 to CYCLE_TIME
     if (current_time < ASDR[0]) {
         //essentially an interpolation
-        int PWM_attack=map(current_time, 0, ASDR[0], PWM_min, PWM_max);
-        //update PWM_last_min 
-        if(sharedData.P_current<=sharedData.P_min){
-            if(sharedData.wave_debug)Serial.printf("updating last_min:%d\n",
-                PWM_attack);
-            sharedData.PWM_last_min=PWM_attack;
-        }
-        return PWM_attack;
+        return map(current_time, 0, ASDR[0], PWM_min, PWM_max);
     }
     else if (current_time < (ASDR[0] + ASDR[1])) {
         return PWM_max;
@@ -91,6 +76,7 @@ DO:
 void TF_wavegen(void *pvParameters) {
     WaveGenerator* wave = (WaveGenerator*) pvParameters;
     Serial.println("Start Waveform task");
+    int prev_PWM;
     for (;;) {
         //calculate PWM_last_min;
         /*
@@ -100,16 +86,20 @@ void TF_wavegen(void *pvParameters) {
         is less than the PWM_last_min, update the last_min 
         */
         // Serial.println("waveform loop");
-        int mappedMin=mapPos(sharedData.P_min);
-        int mappedMax=mapPos(sharedData.P_max);
         if(sharedData.calibration_state==2){
+            int mappedMin=mapPos(sharedData.P_min);
+            int mappedMax=mapPos(sharedData.P_max);
+            if(sharedData.wave_debug) Serial.printf("P_min: %2.3f, mappedMin: %d, PWM_last_min: %d\n", 
+            (float) sharedData.P_min, (int) mappedMin, sharedData.PWM_last_min);
+            
+            // User lowers P_min
             if(mappedMin<sharedData.PWM_last_min){
-                // so if we want to move further back
-                sharedData.PWM_last_min=mapPos(sharedData.P_min);
-                if(sharedData.wave_debug) Serial.printf("map(current P_min) < PWM(last location of P_min):\t Set PWM last min=%d\n",sharedData.PWM_last_min);
+                sharedData.PWM_last_min=mappedMin;
+                if(sharedData.wave_debug) Serial.printf("P_min lowered: Updated PWM_last_min to %d\n", sharedData.PWM_last_min);
             }
+                
             //calculate PWM_offset
-            sharedData.PWM_offset=mapPos(sharedData.P_max)-mapPos(sharedData.P_min);
+            sharedData.PWM_offset=mappedMax-mappedMin;
             if(sharedData.PWM_offset+sharedData.PWM_last_min>4095){
                 sharedData.calibration_state=4;
                 if(sharedData.wave_debug) Serial.println("movement would be out of range");
@@ -123,7 +113,14 @@ void TF_wavegen(void *pvParameters) {
             if(sharedData.wave_debug) Serial.printf("Floor:%d\tOffset:%d\n",sharedData.PWM_last_min,sharedData.PWM_offset);
             //update function does the handshake to update wave object's values.
             wave->update(sharedData.ASDR, sharedData.PWM_min, sharedData.PWM_max);
-            sharedData.PWM_value=wave->generatePWM();
+            int newPWM_value=wave->generatePWM();
+            // could use sharedData.PWM_value instead, but not sure how it'd interact w/ rest of loop
+            if(sharedData.P_current<sharedData.P_min
+                && prev_PWM<newPWM_value){ 
+                sharedData.PWM_last_min=sharedData.PWM_value;
+            }
+            prev_PWM=sharedData.PWM_value;
+            sharedData.PWM_value=newPWM_value;
         }
         vTaskDelay(pdMS_TO_TICKS(7));
     }
@@ -135,7 +132,7 @@ int mapPos(float P_target) {
     // Determine the actual pressure range from the calibration data
     float P_min = sharedData.pmap[sharedData.PWM_c_min];
     float P_max = sharedData.pmap[sharedData.PWM_c_max];
-    if(sharedData.wave_debug) Serial.printf("Pm: %2.2f, PM: %2.2f, PT:%2.2f\n",P_min,P_max,P_target);
+    // if(sharedData.wave_debug) Serial.printf("Pm: %2.2f, PM: %2.2f, PT:%2.2f\n",P_min,P_max,P_target);
     // Clamp P_target to be within the actual pressure range
     P_target = constrain(P_target, P_min, P_max);
 

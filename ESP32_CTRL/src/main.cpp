@@ -68,15 +68,14 @@ void setup() {
     // test values for wave generation w/o calibration
     sharedData.PWM_c_min=000;
     sharedData.PWM_c_max=3000;
-    sharedData.P_min=0.0;
-    sharedData.P_max=1.1;
+    sharedData.P_min=0.05;
+    sharedData.P_max=1.0;
     for (int i =sharedData.PWM_c_min=000; i <= sharedData.PWM_c_max; i++){
         sharedData.pmap[i] = (i - sharedData.PWM_c_min) * (0.6f / (sharedData.PWM_c_max - sharedData.PWM_c_min));
     }
     ui.begin();
     ui.setOptions(sharedData.ASDR, opt_name, 100);
     sensor1.begin();
-    wave.begin();
     motor.setMotor(&m_zap);
     motor.begin();
     // wave.updateParams(ASDR,sharedData.PWM_min,sharedData.PWM_max);

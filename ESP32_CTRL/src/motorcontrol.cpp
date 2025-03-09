@@ -136,7 +136,7 @@ void TF_calibrate(void* pvParams) {
         case 1: // Move to initial position
           if(!commandSent) {
             Serial.println("Moving to initial position");
-            targetPosition = 3000;
+            targetPosition = 2500;
             motor->m_zap->GoalPosition(ID_NUM, targetPosition);
             commandSent = true;
             lastCommandTime = millis();
