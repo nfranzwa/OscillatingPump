@@ -19,7 +19,7 @@ int WaveGenerator::generatePWM() {
     if (current_time < ASDR[0]) {
         //update PWM_last_min 
         if(sharedData.P_current<=sharedData.P_min){
-            sharedData.PWM_last_min=sharedData.PWM_current;
+            sharedData.PWM_last_min=sharedData.PWM_value;
         }
         return map(current_time, 0, ASDR[0], PWM_min, PWM_max);
     }
@@ -104,7 +104,7 @@ void TF_wavegen(void *pvParameters) {
             }
             // then set PWM_last_min to be the map from pmap
             //calculate PWM_offset
-            // PWM_offset=pmap of P_max - pmap of P_min
+            sharedData.PWM_offset=mapPos(sharedData.P_max)-mapPos(sharedData.P_min);
             if(sharedData.PWM_offset+sharedData.PWM_last_min>4095){
                 sharedData.calibration_state=4;
                 Serial.println("movement would be out of range");
@@ -119,7 +119,7 @@ void TF_wavegen(void *pvParameters) {
             wave->update(sharedData.ASDR, sharedData.PWM_min, sharedData.PWM_max);
             sharedData.PWM_value=wave->generatePWM();
         }
-        vTaskDelay(pdMS_TO_TICKS(8));
+        vTaskDelay(pdMS_TO_TICKS(7));
     }
 }
 

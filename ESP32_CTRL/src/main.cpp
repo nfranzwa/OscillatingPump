@@ -58,15 +58,15 @@ void setup() {
     // if(Wire.endTransmission()==0) Serial.println("Pressure sensor found at 0x28");
     // else Serial.println("sensor not found, check wiring");
     // digitalWrite(P_PIN_OUT,LOW);
-    sharedData.calibration_state=1;
-    sharedData.PWM_min = 10;
+    sharedData.calibration_state=2;
+    sharedData.PWM_min = 0;
     sharedData.PWM_max = 4095;
     sharedData.PWM_value= 200;
     memcpy(sharedData.ASDR,ASDR,4*sizeof(int));
     // test values for wave generation w/o calibration
     sharedData.PWM_c_min=000;
     sharedData.PWM_c_max=3000;
-    sharedData.P_min=1.0;
+    sharedData.P_min=0.5;
     sharedData.P_max=1.6;
     for (int i = 100; i <= 3000; i++){
         sharedData.pmap[i] = (i - 100) * (1.7f / (3000 - 100));
@@ -84,13 +84,13 @@ void setup() {
     ui.setLCD(&lcd);
     // create tasks
     xTaskCreatePinnedToCore(TF_sensor   ,"Sensor Task"  ,4000   , &sensor1, 2, &TH_sensor , 0);
-    xTaskCreatePinnedToCore(TF_talk2web ,"Web Comm Task",140000 , nullptr , 3, &TH_talk2web,0);
+    xTaskCreatePinnedToCore(TF_talk2web ,"Web Comm Task",100000 , nullptr , 3, &TH_talk2web,0);
     xTaskCreatePinnedToCore(TF_wavegen  ,"Wavegen Task" ,6000   , &wave   , 1, &TH_wavegen, 0);
     xTaskCreatePinnedToCore(TF_lcd      ,"LCD Task"     ,5000   , &lcd    , 1, &TH_lcd    , 1);
     xTaskCreatePinnedToCore(TF_ui       ,"UI Task"      ,6000   , &ui     , 1, &TH_ui     , 0);
     // xTaskCreatePinnedToCore(TF_status_LED,"statLED Task",4000   , nullptr , 0, &TH_statusLED,0);
-    xTaskCreatePinnedToCore(TF_calibrate,"Calib. Task"  ,8000   , &motor  , 0, &TH_calibrate,0);
     xTaskCreatePinnedToCore(TF_motor    ,"Motor Task"   ,4000   , &motor  , 0, &TH_motor  ,0);
+    // xTaskCreatePinnedToCore(TF_calibrate,"Calib. Task"  ,8000   , &motor  , 0, &TH_calibrate,0);
     // xTaskCreatePinnedToCore(TF_ptest    ,"testP Task"   ,2000   , nullptr , 0, &TH_ptest  ,0);
 
 }
@@ -113,29 +113,32 @@ void TF_talk2web(void* pvParams){
     Serial.println("Start T2W Task");
     for(;;){
         if(mySerial.available()){
-            Serial.println("start reading");
+            // Serial.println("start reading");
             vTaskDelay(pdMS_TO_TICKS(10));
             String msg = mySerial.readStringUntil('\n');
             // String msg="help";
-            Serial.println("Received "+msg);
+            // Serial.println("Received "+msg);
             //if the new message matches format, rewrite the variables
             //MinP, MaxP, S, R, A/D, calibration_state, manual position
             
             if (sscanf(msg.c_str(), "%f,%f,%d,%d,%d,%d,%d",
-                &sharedData.P_min, &sharedData.P_max,&sharedData.ASDR[1],
+                &sharedData.P_minH2O, &sharedData.P_maxH2O,&sharedData.ASDR[1],
                 &sharedData.ASDR[3],&sharedData.ASDR[0],
                 &sharedData.calibration_state,&sharedData.PWM_manual) == 7
                 ) {
             sharedData.ASDR[2]= sharedData.ASDR[0];
-            
+            //convert input (H2O) to psi
+            sharedData.P_min=sharedData.P_minH2O/70.307;
+            sharedData.P_max=sharedData.P_maxH2O/70.307;
             // Successfully parsed the message
             //print statement for update
             Serial.printf("Pmin%-2.2f Pmax%-2.2f A/D:%d S:%d R%d\n",
                 sharedData.P_min,sharedData.P_max,sharedData.ASDR[0],sharedData.ASDR[1],sharedData.ASDR[3]);    
             }
         }
+        Serial.printf("%f,%d\n",sharedData.P_current ,sharedData.calibration_state);
         mySerial.printf("%f,%d\n",sharedData.P_current ,sharedData.calibration_state);
-        Serial.println("T2W end of loop");
+        // Serial.println("T2W end of loop");
         vTaskDelay(pdMS_TO_TICKS(100));
     }
 }

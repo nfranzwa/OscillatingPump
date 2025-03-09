@@ -6,17 +6,19 @@
 // Shared data structure
 struct SharedData {
     float P_current;        // Current pressure reading
-    int PWM_value;          // Current PWM value
+    int PWM_value;          // Current PWM value of actuation
     int ASDR[4];            // ASDR values (Attack, Sustain, Decay, Rest)
     int cyc_period;         // cycle period in mss
-    int PWM_max;            // Maximum PWM value
-    int PWM_min;            // Minimum PWM value
+    int PWM_max;            // Maximum PWM value of actuation
+    int PWM_min;            // Minimum PWM value of actuation
     float PID[3];           // PID coefficients
     String mode_current;    // Current mode
     String param_current;   // Current parameter being edited
     int value_current;      // Current value of the parameter
     String err_msg="";
     float pmap[4095]={-1.0};       // pressure mapped onto each position
+    float P_minH2O;
+    float P_maxH2O;
     /*
     0: not calibrated
     1: calibrating
@@ -24,11 +26,11 @@ struct SharedData {
     3: manual
     4: error
     */
-    int calibration_state=2;
+    int calibration_state;
     int PWM_manual;
     int PWM_c_min=0;
     int PWM_c_max=4095;
-    int PWM_current;
+    // int PWM_current;
     //TODO: correction code;
     /*
     wave generation must interface with following vars:
@@ -48,9 +50,9 @@ struct SharedData {
     // TODO: this value is updated by wavegen.cpp
     int PWM_last_min=0;
     // TODO: update this value from TF_wavegen
-    int PWM_offset=100;
+    int PWM_offset=1000;
     float P_min=1.0;
-    float P_max=6.0; 
+    float P_max=6.0;
     //based on sensor specs
 
     float P_test;
@@ -80,8 +82,8 @@ extern SharedData sharedData;  // Declare the global instance of SharedData
 #define V_SUPPLY    3.3
 #define V_MIN       0.1
 #define V_MAX       3.08
-#define P_MIN       -1.2
-#define P_MAX       1.2 // max pressure sensor output
+#define P_MIN       -1.12
+#define P_MAX       1.12 // max pressure sensor output
 #define ADC_RES     4095
 
 //display

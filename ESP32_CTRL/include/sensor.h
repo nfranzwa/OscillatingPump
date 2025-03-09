@@ -26,7 +26,7 @@ class PSensor {
         float press_counts = 0;
         float pressure = 0;
         float pmax = 1;              // maximum value of pressure range [bar, psi, kPa, etc.]
-        float pmin = 0;  
+        float pmin = -1;  
         float psi = 0;
         //filter parameters
         float past_estimate     = 0.0;
