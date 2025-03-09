@@ -18,6 +18,8 @@ function updateMinMaxValues() {
     xhr.open("GET", "/MinPressure?value=" + maxValue, true);
     xhr.send();
   }
+
+  updateChartScale();
 }
 
 // Modify your existing changeValues function
@@ -48,11 +50,14 @@ function changeValues(button, step) {
   var xhr = new XMLHttpRequest();
   xhr.open("GET", name2 + newValue, true);
   xhr.send();
+
+  updateChartScale();
 }
 
 // Initialize on page load
 window.onload = function () {
   updateMinMaxValues();
+  updateChartScale();
 };
 
 document.getElementById("position-slider").addEventListener("input", function () {
@@ -218,10 +223,30 @@ const pressureChart = new Chart(ctx, {
     responsive: false,
     scales: {
       x: { title: { display: true, text: 'Data Points' } },
-      y: { title: { display: true, text: 'Pressure (cmH20)' } }
+      y: {
+        title: { display: true, text: 'Pressure (cmH20)' },
+        min: function() {
+          const minPressure = parseInt(document.getElementById('MinPressureInput').value);
+          return Math.max(0, minPressure - 10); // Ensure we don't go below 0
+        },
+        max: function() {
+          const maxPressure = parseInt(document.getElementById('MaxPressureInput').value);
+          return maxPressure + 10;
+        }
+      }
     }
   }
 });
+
+function updateChartScale() {
+  const minPressure = parseInt(document.getElementById('MinPressureInput').value);
+  const maxPressure = parseInt(document.getElementById('MaxPressureInput').value);
+  
+  pressureChart.options.scales.y.min = Math.max(0, minPressure - 10); // Ensure we don't go below 0
+  pressureChart.options.scales.y.max = maxPressure + 10;
+  
+  pressureChart.update();
+}
 
 function getReadings() {
   var xhr = new XMLHttpRequest();
