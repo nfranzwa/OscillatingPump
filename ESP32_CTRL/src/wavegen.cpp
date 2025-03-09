@@ -19,6 +19,7 @@ int WaveGenerator::generatePWM() {
     if (current_time < ASDR[0]) {
         //update PWM_last_min 
         if(sharedData.P_current<=sharedData.P_min){
+            Serial.println("updating last_min");
             sharedData.PWM_last_min=sharedData.PWM_value;
         }
         return map(current_time, 0, ASDR[0], PWM_min, PWM_max);
@@ -110,6 +111,7 @@ void TF_wavegen(void *pvParameters) {
                 Serial.println("movement would be out of range");
             }
             else{ // safe range of values;
+                Serial.println("Updating waveform max, min");
                 //use pwm_last_min, offset value calculated
                 sharedData.PWM_min=sharedData.PWM_last_min;
                 sharedData.PWM_max=sharedData.PWM_last_min+sharedData.PWM_offset;
