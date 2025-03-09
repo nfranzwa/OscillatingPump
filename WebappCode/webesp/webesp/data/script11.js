@@ -1,15 +1,59 @@
 window.addEventListener('load', getReadings);
+var calibrationstate = 0;
+let hascalibrated = false;
+function updateMinMaxValues() {
+  const minInput = document.getElementById('MinPressureInput');
+  const maxInput = document.getElementById('MaxPressureInput');
 
+  // Get current values
+  const minValue = parseInt(minInput.value);
+  const maxValue = parseInt(maxInput.value);
+
+  // Update min/max constraints
+  if (minValue > maxValue) {
+    minInput.value = maxValue;
+
+    // Send updated value to server
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", "/MinPressure?value=" + maxValue, true);
+    xhr.send();
+  }
+}
+
+// Modify your existing changeValues function
 function changeValues(button, step) {
-  let input = button.parentElement.querySelector("input"); // Get the input field inside the same .input-group
-  let name = input.getAttribute("name"); // Get the name attribute of the input
-  let newValue = Math.min(Math.max(parseInt(input.value) + step, 0), 30); // Ensure value stays in range
+  let input = button.parentElement.querySelector("input"); // Get the input field
+  let name = input.getAttribute("name"); // Get the name attribute
+  let maxLimit = Infinity;
+  // Apply different max constraints based on input name
+
+  if (name === "MinPressure") {
+    const maxPressure = parseInt(document.getElementById('MaxPressureInput').value);
+    maxLimit = maxPressure;
+  }
+
+  let newValue = parseInt(input.value) + step;
+  newValue = Math.max(newValue, 0);
+  if (maxLimit !== Infinity) {
+    newValue = Math.min(newValue, maxLimit);
+  }
+
   input.value = newValue;
+
+  // Update constraints after value change
+  updateMinMaxValues();
+
+  // Send value to server
   var name2 = "/" + name + "?value=";
   var xhr = new XMLHttpRequest();
   xhr.open("GET", name2 + newValue, true);
   xhr.send();
 }
+
+// Initialize on page load
+window.onload = function () {
+  updateMinMaxValues();
+};
 
 document.getElementById("position-slider").addEventListener("input", function () {
   let sliderValue = this.value; // Get the current slider value
@@ -24,10 +68,43 @@ function editslider(value) {
 }
 
 const pressureData = [];
-let calibrationstate = 0;
 let isRecording = false;
 let isCalibrated = 0;
 let hasrecorded = false;
+
+// Function to update UI based on calibration state
+function updateCalibrationUI() {
+  const calibrationMessage = document.getElementById('calibration-message');
+  
+  // Handle button enabling/disabling
+  if (calibrationstate == 0 || calibrationstate == 1) {
+    document.getElementById('record-button').disabled = true;
+    document.getElementById('standby-button').disabled = true;
+  } else if (calibrationstate == 2 || calibrationstate == 3) {
+    document.getElementById('record-button').disabled = false;
+    document.getElementById('standby-button').disabled = false;
+  }
+
+  if (calibrationstate == 3) {
+    document.getElementById('calibration-button').disabled = true;
+  } else {
+    document.getElementById('calibration-button').disabled = false;
+  }
+
+  // Update the calibration message
+  if (calibrationstate == 1) {
+    calibrationMessage.textContent = "Calibrating...";
+    calibrationMessage.classList.remove("hidden");
+    calibrationMessage.className = "calibration-status calibrating";
+  } else if (calibrationstate == 2) {
+    hascalibrated = true;
+    calibrationMessage.textContent = "Calibration Done";
+    calibrationMessage.classList.remove("hidden");
+    calibrationMessage.className = "calibration-status complete";
+  } else {
+    calibrationMessage.classList.add("hidden");
+  }
+}
 
 function toggleRecording(element) {
   hasrecorded = true;
@@ -52,41 +129,58 @@ function toggleRecording(element) {
 document.getElementById("modeToggle").addEventListener("change", function () {
   const positionSlider = document.getElementById("position-slider");
   const sliderContainer = document.querySelector(".slider-container");
-  
+
   if (this.checked) {
     // Manual mode
-    var path = "/calibration?value=3";
+    calibrationstate = 3;
+    var path = "/calibration?value=" + String(calibrationstate);
     positionSlider.disabled = false;
     sliderContainer.classList.remove("disabled");
   } else {
+    if (hascalibrated == true) {
+      calibrationstate = 2;
+    } else {
+      calibrationstate = 0;
+    }
     // Automatic mode
-    var path = "/calibration?value=0";
+    var path = "/calibration?value=" + String(calibrationstate);
     positionSlider.disabled = true;
     sliderContainer.classList.add("disabled");
   }
-  
+
+  // Update UI based on new calibration state
+  updateCalibrationUI();
+
   var xhr = new XMLHttpRequest();
   xhr.open("GET", path, true);
   xhr.send();
 });
 
 function calibrating(button) {
-  var path = "/calibration?value=1";
+  calibrationstate = 1;
+  var path = "/calibration?value=" + String(calibrationstate);
+  
+  // Update UI based on new calibration state
+  updateCalibrationUI();
+  
   var xhr = new XMLHttpRequest;
   xhr.open("GET", path, true);
   xhr.send();
 }
 
 function standby(element) {
-  var path = "/calibration?value=4S";
+  calibrationstate = 4;
+  hascalibrated = false;
+  var path = "/calibration?value=" + String(calibrationstate);
+  
+  // Update UI based on new calibration state
+  updateCalibrationUI();
+  
   var xhr = new XMLHttpRequest;
   xhr.open("GET", path, true);
   xhr.send();
 }
 
-function updatecalibr(newValue) {
-  calibrationstate = newValue;
-}
 
 function updateChart(newValue) {
   pressureData.push(parseFloat(newValue)); // Ensure numerical values
@@ -137,17 +231,20 @@ function getReadings() {
   };
   xhr.open("GET", "/readings", true);
   xhr.send();
-  
+
   // Initialize the slider state based on the default toggle state
   const modeToggle = document.getElementById("modeToggle");
   const positionSlider = document.getElementById("position-slider");
   const sliderContainer = document.querySelector(".slider-container");
-  
+
   if (!modeToggle.checked) {
     // If automatic mode is the default (toggle not checked)
     positionSlider.disabled = true;
     sliderContainer.classList.add("disabled");
   }
+  
+  // Initialize UI based on starting calibration state
+  updateCalibrationUI();
 }
 
 if (!!window.EventSource) {
@@ -167,40 +264,13 @@ if (!!window.EventSource) {
     updateChart(e.data);
   }, false);
 
- // Replace the calstate event listener in your script8.js file with this:
-
-source.addEventListener('calstate', function (e) {
-  const calibrationMessage = document.getElementById('calibration-message');
-  
-  // Update the calibration state
-  calibrationstate = parseInt(e.data);
-  
-  // Handle button enabling/disabling
-  if (calibrationstate == 0 || calibrationstate == 1 || calibrationstate == 3) {
-    document.getElementById('record-button').disabled = true;
-    document.getElementById('standby-button').disabled = true;
-  } else if (calibrationstate == 2) {
-    document.getElementById('record-button').disabled = false;
-    document.getElementById('standby-button').disabled = false;
-  }
-  
-  if (calibrationstate == 3) {
-    document.getElementById('calibration-button').disabled = true;
-  } else {
-    document.getElementById('calibration-button').disabled = false;
-  }
-
-  // Update the calibration message
-  if (calibrationstate == 0) {
-    calibrationMessage.textContent = "Calibrating...";
-    calibrationMessage.classList.remove("hidden");
-    calibrationMessage.className = "calibration-status calibrating";
-  } else if (calibrationstate == 3) {
-    calibrationMessage.textContent = "Calibration Done";
-    calibrationMessage.classList.remove("hidden");
-    calibrationMessage.className = "calibration-status complete";
-  } else {
-    calibrationMessage.classList.add("hidden");
-  }
-});
+  source.addEventListener('calstate', function (e) {
+    // Update the calibration state
+    let newcalibrationstate = parseInt(e.data);
+    if (newcalibrationstate == 2) {
+      calibrationstate = 2;
+      // Update UI based on new calibration state from server
+      updateCalibrationUI();
+    }
+  }, false);
 }

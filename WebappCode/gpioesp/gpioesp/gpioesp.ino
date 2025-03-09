@@ -21,7 +21,7 @@ double pressure = 0;
 double outputmax = 15099494;
 double outputmin = 1677722;
 double pmax = 1;
-double pmin = 0;
+double pmin = -1;
 float minpressure;
 float maxpressure;
 float attacktime;
@@ -40,59 +40,6 @@ const float DUTY_CYCLE = 0.4;
 
 MightyZap m_zap(&Serial2, MIGHTY_ZAP_EN, 1);
 
-// Add timeout to calibration function
-int calibration(int calibrationstate) {
-  Serial.println("Calibrating");
-  calibrationstate = 1;
-  int calstarttime = millis();
-  int reached = 0;
-  unsigned long calibrationStartTime = millis();
-  
-  // Add timeout of 10 seconds for the entire calibration process
-  while (calibrationstate == 1 && (millis() - calibrationStartTime < 10000)) {
-    Serial.printf("MODEL NUM:%d\n", m_zap.getModelNumber(ID_NUM));
-    int curpos = m_zap.presentPosition(ID_NUM);
-    
-    // Print current position for debugging
-    Serial.printf("Current position: %d\n", curpos);
-    
-    if (reached == 0) {
-      if (abs(curpos - MIN_POS) < 3) {
-        reached = 1;
-        calstarttime = millis();
-        Serial.println("Reached minimum position");
-      } else {
-        int err = MIN_POS - curpos;
-        if (abs(curpos - MIN_POS) > 10) {
-          m_zap.GoalPosition(ID_NUM, MIN_POS);
-        } else {
-          m_zap.GoalPosition(ID_NUM, MIN_POS + err);
-        }
-      }
-    } else {
-      if (abs(curpos - MAX_POS) < 3) {
-        calibrationstate = 2;
-        Serial.println("Calibration done");
-        return calibrationstate;
-      } else {
-        if (millis() - calstarttime > 2000) {
-          m_zap.GoalPosition(ID_NUM, MAX_POS);
-        }
-      }
-    }
-    
-    // Add a small delay to prevent CPU hogging
-    delay(100);
-  }
-  
-  // If we exit due to timeout
-  if (millis() - calibrationStartTime >= 10000) {
-    Serial.println("Calibration timed out");
-    return 3; // Return a different state to indicate timeout
-  }
-  
-  return calibrationstate;
-}
 
 int calculateSpeed(int distance, float freq) {
   // Total period = 1/frequency
@@ -118,6 +65,7 @@ void updateParameters() {
 }
 
 String readPressureRaw() {
+  Serial.println("here");
   Wire.beginTransmission(I2C_ADDRESS);
   int stat = Wire.write(cmd, 3);
   stat |= Wire.endTransmission();
@@ -142,13 +90,13 @@ void setup() {
   Wire.begin();
   Serial2.begin(32, SERIAL_8N1, MIGHTY_ZAP_RX, MIGHTY_ZAP_TX);
   m_zap.begin(32);
-  Wire.beginTransmission(I2C_ADDRESS); 
+  //Wire.beginTransmission(I2C_ADDRESS); 
   mySerial.begin(115200, SERIAL_8N1, RXD1, TXD1);
   
   Serial.println("Setup complete");
 
   // LCD initialization - keep commented out unless LCD is connected
-  /*
+  
   lcd.init();
   lcd.backlight();
   lcd.setCursor(0, 0);
@@ -175,7 +123,7 @@ void setup() {
   lcd.print("Hz");
   lcd.setCursor(17, 3);
   lcd.print("s");
-  */
+  
 }
 
 void loop() {
@@ -206,7 +154,7 @@ void loop() {
   }
 
   // Motor control section - keep commented out unless motor is connected
-  /*
+  
   float totalPeriod = 1000.0 / frequency;
   float activeTime = totalPeriod * DUTY_CYCLE;
   float restTime = totalPeriod * (1.0 - DUTY_CYCLE);
@@ -218,12 +166,12 @@ void loop() {
   }
   
   // Only run calibration if needed and not already attempted
-  if (calibrationstate == 0) {
+ /*  if (calibrationstate == 0) {
     // Run calibration with a timeout
     calibrationstate = calibration(calibrationstate);
     Serial.println("Calibration state after attempt: " + String(calibrationstate));
   }
-
+   */
   if (currentTime < activeTime) {
     // First half of active period: forward movement
     if (currentTime < activeTime / 2) {
@@ -251,7 +199,7 @@ void loop() {
     }
     delay(10);
   }
-  */
+  
   
   // Always send pressure data
   mySerial.print(pres);
