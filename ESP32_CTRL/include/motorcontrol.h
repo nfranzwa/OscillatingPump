@@ -32,6 +32,6 @@ class MotorControl {
         void TH_motor(void* pvParams);
         void resetPMap();
         void calibrate(int state);
-    };
-
+};
+void cleanArray(std::array<float, 4096>& pmap, int startIdx, int endIdx);
 #endif

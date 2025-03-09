@@ -17,12 +17,15 @@ int WaveGenerator::generatePWM() {
     current_time = current_time % CYCLE_TIME;// might be unnecessary
     // basically a rising triangle wave from 0 to CYCLE_TIME
     if (current_time < ASDR[0]) {
+        //essentially an interpolation
+        int PWM_attack=map(current_time, 0, ASDR[0], PWM_min, PWM_max);
         //update PWM_last_min 
         if(sharedData.P_current<=sharedData.P_min){
-            Serial.println("updating last_min");
-            sharedData.PWM_last_min=sharedData.PWM_value;
+            if(sharedData.wave_debug)Serial.printf("updating last_min:%d\n",
+                PWM_attack);
+            sharedData.PWM_last_min=PWM_attack;
         }
-        return map(current_time, 0, ASDR[0], PWM_min, PWM_max);
+        return PWM_attack;
     }
     else if (current_time < (ASDR[0] + ASDR[1])) {
         return PWM_max;
@@ -97,26 +100,27 @@ void TF_wavegen(void *pvParameters) {
         is less than the PWM_last_min, update the last_min 
         */
         // Serial.println("waveform loop");
+        int mappedMin=mapPos(sharedData.P_min);
+        int mappedMax=mapPos(sharedData.P_max);
         if(sharedData.calibration_state==2){
-            if(mapPos(sharedData.P_min)<sharedData.PWM_last_min){
+            if(mappedMin<sharedData.PWM_last_min){
                 // so if we want to move further back
-                Serial.printf("target below current P_min");
                 sharedData.PWM_last_min=mapPos(sharedData.P_min);
+                if(sharedData.wave_debug) Serial.printf("map(current P_min) < PWM(last location of P_min):\t Set PWM last min=%d\n",sharedData.PWM_last_min);
             }
-            // then set PWM_last_min to be the map from pmap
             //calculate PWM_offset
             sharedData.PWM_offset=mapPos(sharedData.P_max)-mapPos(sharedData.P_min);
             if(sharedData.PWM_offset+sharedData.PWM_last_min>4095){
                 sharedData.calibration_state=4;
-                Serial.println("movement would be out of range");
+                if(sharedData.wave_debug) Serial.println("movement would be out of range");
             }
             else{ // safe range of values;
-                Serial.println("Updating waveform max, min");
+                if(sharedData.wave_debug) Serial.println("Updating waveform max, min");
                 //use pwm_last_min, offset value calculated
                 sharedData.PWM_min=sharedData.PWM_last_min;
                 sharedData.PWM_max=sharedData.PWM_last_min+sharedData.PWM_offset;
             }
-            Serial.printf("Floor:%d\tOffset:%d\n",sharedData.PWM_last_min,sharedData.PWM_offset);
+            if(sharedData.wave_debug) Serial.printf("Floor:%d\tOffset:%d\n",sharedData.PWM_last_min,sharedData.PWM_offset);
             //update function does the handshake to update wave object's values.
             wave->update(sharedData.ASDR, sharedData.PWM_min, sharedData.PWM_max);
             sharedData.PWM_value=wave->generatePWM();
@@ -128,61 +132,62 @@ void TF_wavegen(void *pvParameters) {
 // as long as the target pressure is within the calibration range, run a binary search
 // WARNING: binary search assumes the values sorted (aka monotonic)
 int mapPos(float P_target) {
-    // Ensure target pressure is within the calibration range
-    if (P_target > sharedData.P_max || P_target < sharedData.P_min) {
-        Serial.println("Target pressure out of range, recalibrate");
-        return sharedData.PWM_c_min;
-    }
+    // Determine the actual pressure range from the calibration data
+    float P_min = sharedData.pmap[sharedData.PWM_c_min];
+    float P_max = sharedData.pmap[sharedData.PWM_c_max];
+    if(sharedData.wave_debug) Serial.printf("Pm: %2.2f, PM: %2.2f, PT:%2.2f\n",P_min,P_max,P_target);
+    // Clamp P_target to be within the actual pressure range
+    P_target = constrain(P_target, P_min, P_max);
 
-    // Directly return limits if exactly matching
-    if (P_target == sharedData.P_max) return sharedData.PWM_c_max;
-    if (P_target == sharedData.P_min) return sharedData.PWM_c_min;
-
+    // Binary search to find closest pressure
     int left = sharedData.PWM_c_min;
     int right = sharedData.PWM_c_max;
-
-    // Ensure valid range
-    if (left >= right) {
-        Serial.println("Invalid calibration range, check PWM limits");
-        return left;
-    }
-
-    int closestPos = left;
-    float minDiff = fabs(sharedData.pmap[left] - P_target);
+    int bestPos = left;
+    float minDiff = P_max-P_min;
     
-    int i = 0; // Debugging counter
     while (left <= right) {
         int mid = left + (right - left) / 2;
-
-        // Ensure mid is within valid range
-        if (mid < sharedData.PWM_c_min || mid > sharedData.PWM_c_max) {
-            Serial.println("Binary search index out of bounds, aborting");
-            return closestPos;
+        
+        // Skip uncalibrated positions
+        if (sharedData.pmap[mid] == -1.0) {
+        // Try to find the nearest calibrated position
+        int searchLeft = mid - 1;
+        int searchRight = mid + 1;
+        bool found = false;
+        
+        // Find nearest calibrated position
+        while (!found && (searchLeft >= sharedData.PWM_c_min || searchRight <= sharedData.PWM_c_max)) {
+            if (searchLeft >= sharedData.PWM_c_min && sharedData.pmap[searchLeft] != -1.0) {
+                mid = searchLeft;
+                found = true;
+            } else if (searchRight <= sharedData.PWM_c_max && sharedData.pmap[searchRight] != -1.0) {
+                mid = searchRight;
+                found = true;
+            } else {
+                searchLeft--;
+                searchRight++;
+            }
         }
-
-        float midValue = sharedData.pmap[mid];
-        float diff = fabs(midValue - P_target);
-
-        // Update closest position
+        
+        // If no calibrated position found, break
+        if (!found) break;
+        }
+        
+        float currentP = sharedData.pmap[mid];
+        float diff = abs(currentP - P_target);
+        
+        // Update best position if we found a closer match
         if (diff < minDiff) {
             minDiff = diff;
-            closestPos = mid;
+            bestPos = mid;
         }
-
-        // Adjust search range
-        if (midValue < P_target) {
-            left = mid + 1;
-        } else {
-            right = mid - 1;
-        }
-
-        // Debugging loop limit
-        i++;
-        if (i > 12) {
-            Serial.println("Binary search error, too many loops. Returning closest guess");
-            return closestPos;
-        }
+        
+        // Perfect match found
+        if (diff == 0) return mid;
+        // Decide which half to search next
+        if (currentP < P_target) left = mid + 1;
+        else right = mid - 1;
     }
-    Serial.printf("T_P:%f\tP_min:%f\tP_max%f\tT_PWM:%f\n",P_target,sharedData.P_min,sharedData.P_max,closestPos);
-    return closestPos;
+    // if(sharedData.wave_debug) Serial.printf("T_P:%f\tP_min:%f\tP_max%f\tT_PWM:%f\n",P_target,sharedData.P_min,sharedData.P_max,bestPos);
+    return bestPos;
 }

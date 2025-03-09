@@ -163,7 +163,9 @@ void TF_lcd(void* pvParams){
         lcd->setCursor(0, 1);
         lcd->printf("%-7s:%5d ms", sharedData.param_current.c_str(), sharedData.value_current);
         lcd->setCursor(0, 2);
-        lcd->printf("T1:%-4.0f P:%-3.2f psi", (float) sharedData.PWM_value, sharedData.P_current);
+        lcd->printf("T:%-5d P:%+2.2f psi", sharedData.PWM_value, sharedData.P_current);
+        lcd->setCursor(0, 3);
+        lcd->printf("Pm:%+2.2f PM:%+2.2f", (float) sharedData.P_min, sharedData.P_max);
         
         // lcd->setCursor(0,3);
         // lcd->scrollDisplayRight();

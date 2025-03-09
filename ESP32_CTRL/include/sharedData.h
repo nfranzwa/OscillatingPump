@@ -2,7 +2,7 @@
 #define SHARED_DATA_H
 
 #include <Arduino.h>
-
+#include <vector>
 // Shared data structure
 struct SharedData {
     float P_current;        // Current pressure reading
@@ -11,12 +11,12 @@ struct SharedData {
     int cyc_period;         // cycle period in mss
     int PWM_max;            // Maximum PWM value of actuation
     int PWM_min;            // Minimum PWM value of actuation
-    float PID[3];           // PID coefficients
+    // float PID[3];           // PID coefficients
     String mode_current;    // Current mode
     String param_current;   // Current parameter being edited
     int value_current;      // Current value of the parameter
     String err_msg="";
-    float pmap[4095]={-1.0};       // pressure mapped onto each position
+    std::array<float,4096> pmap;       // pressure mapped onto each position
     float P_minH2O;
     float P_maxH2O;
     /*
@@ -64,6 +64,12 @@ struct SharedData {
     4: error
     */
     int STATUS_PINS[5] ={1,2,3,4,5};
+    bool wave_debug=false;
+    bool cal_debug=true;
+    int prev_state;
+    // how off the actual position is for a given P,
+    // compared to when it was calibrated
+    int leak_offset=0;
 };
 
 extern SharedData sharedData;  // Declare the global instance of SharedData

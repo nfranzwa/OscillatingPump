@@ -72,194 +72,199 @@ void TF_motor(void* pvParams) {
   }
 }
 
-/*
-calibrate pressure mappings and motor
-this means remembering
-- starting PWM position for 1 atm
-- positions for up to max pressure
-*/
-/*
- * Calibrate pressure mappings and motor
- * This means remembering:
- * - starting PWM position for 1 atm
- * - positions for up to max pressure
+/**
+ * @brief Calibrate initial motor position and pressure estimates
+ * Stage 0: Initial message (detach pump)
+ * Stage 1: Moving to initial position
+ * Stage 2: Waiting for pump reattachment
+ * Stage 3: Retracting to minimum pressure
+ * Stage 4: Finding precise P_min position
+ * Stage 5: Sweeping to P_max
+ * Stage 6: Finalizing calibration
+ * 
+ * @param pvParams The MightyZap motor address
  */
 void TF_calibrate(void* pvParams) {
-  bool debug=false;
+  bool debug = false;
   MotorControl* motor = (MotorControl*) pvParams;
   int stage = 0;
   unsigned long lastCommandTime = 0;
   bool commandSent = false;
   int currentPosition = 0;
   int targetPosition = 0;
-  
+  int startrange=20;
   // Register with watchdog
   #ifdef CONFIG_ESP_TASK_WDT_ENABLED
       esp_task_wdt_add(NULL);
   #endif
   
   Serial.println("Calibration Task Started");
-  
   for(;;) {
+    debug = sharedData.cal_debug;
     if(debug) {
-      Serial.printf("Calibration state: %d, Stage: %d\n", 
-        sharedData.calibration_state, stage);
+      Serial.printf("state: %d, Stage: %d, CMD time: %5f\n", 
+        sharedData.calibration_state, stage, 
+        sharedData.calibration_state==2 ? 0: (float) (millis()-lastCommandTime));
     }
     
     // Reset stage if calibration state is reset
     if(sharedData.calibration_state == 0) {
       stage = 0;
       commandSent = false;
+      //TODO: reset pmap
     }
-    
+    // running calibration
     if(sharedData.calibration_state == 1) {
-        /*      
-        switch(stage) {
-          case 0: // Initialization
-            // Only print message once
-            if(!commandSent) {
-                Serial.println("Starting calibration. Please detach pump.");
-                commandSent = true;
-                lastCommandTime = millis();
-            }
+      switch(stage) {
+        case 0: // Initialization
+          // Only print message once
+          if(!commandSent) {
+            Serial.println("Starting calibration. Please detach pump.");
+            commandSent = true;
+            lastCommandTime = millis();
+          }
+          
+          // Wait 3 seconds for user to detach pump
+          if(millis() - lastCommandTime > 3000) {
+            // Move to next step
+            stage = 1;
+            commandSent = false;
+            if(debug) Serial.printf("End of stage 0, moving to stage 1\n");
+          }
+          break;
+          
+        case 1: // Move to initial position
+          if(!commandSent) {
+            Serial.println("Moving to initial position");
+            targetPosition = 3000;
+            motor->m_zap->GoalPosition(ID_NUM, targetPosition);
+            commandSent = true;
+            lastCommandTime = millis();
+          }
+          
+          // Check if reached position or timeout
+          sharedData.PWM_value = 4095 - motor->m_zap->presentPosition(ID_NUM);
+          if(abs(sharedData.PWM_value - targetPosition) <= startrange || millis() - lastCommandTime > 3000) {
+            if(debug) Serial.printf("Retract CMD fulfilled: %d\n", sharedData.PWM_value);
+            Serial.println("Motor reached position or timeout. Please reattach pump.");
+            lastCommandTime = millis();
+            stage = 2;
+            commandSent = false;
+            if(debug) Serial.printf("End of stage 1, moving to stage 2\n");
+          }
+          break;
+          
+        case 2: // Wait for user to reattach pump
+          if(millis() - lastCommandTime > 3500) {
+            stage = 3;
+            commandSent = false;
+            if(debug) Serial.printf("End of stage 2, moving to stage 3\n");
+          }
+          break;
+          
+        case 3: // Move back until minimum sensor reading
+          if(!commandSent) {
+            if(debug) Serial.println("Send CMD: retract until Pmin");
+            commandSent = true;
+          }
+          
+          // retract if over pressurized
+          if(sharedData.P_current >= sharedData.P_min) {
+            if(debug) Serial.println("Retracting until hitting minimum sensor pressure");
+            // Still above min pressure, continue moving
+            targetPosition = 4095;
+            motor->m_zap->GoalPosition(ID_NUM, targetPosition);
+          } else {
+            // Reached target pressure
+            sharedData.PWM_value = 4095 - motor->m_zap->presentPosition(ID_NUM);
+            if(debug) Serial.printf("retract CMD finished: P_min ~ %d\n", sharedData.PWM_value);
+            motor->m_zap->GoalPosition(ID_NUM, 4095-sharedData.PWM_value);
+            motor->m_zap->GoalSpeed(ID_NUM, 10); // Set to slow speed
+            if(debug) Serial.printf("Minimized speed, end of stage 3\n");
+            stage = 4;
+            commandSent = false;
+          }
+          break;
+          
+        case 4: // Find P_min position precisely
+          if(!commandSent) {
+            if(debug) Serial.printf("Finding precise P_min (%2.2f) position, current pressure: %.2f\n", 
+              sharedData.P_min, sharedData.P_current);
+            commandSent = true;
+            if(debug) Serial.printf("RESETTING PMAP to -1\n");
+            sharedData.pmap.fill(-1.0);
+          }
+          
+          // if still over pressure  
+          if(sharedData.P_current > sharedData.P_min) {
+            // set target to be full extended
+            if(debug) Serial.println("Still over P");
+            motor->m_zap->GoalPosition(ID_NUM, 4095);
+          } 
+          else { // under or equal to Pmin
+            // Save the position where P_min is achieved
+            sharedData.PWM_value = 4095 - motor->m_zap->presentPosition(ID_NUM);
+            sharedData.PWM_c_min = sharedData.PWM_value;
+            sharedData.PWM_last_min = sharedData.PWM_c_min;
+            // Hold current position
+            motor->m_zap->GoalPosition(ID_NUM, 4095-sharedData.PWM_value);
+            if(debug) Serial.printf("Found P_min at PWM value %d\n", sharedData.PWM_c_min);
+            stage = 5;
+            commandSent = false;
+          }
+          break;
+          
+        case 5: // Sweep to P_max while recording pressure map
+          if(!commandSent) {
+            Serial.println("Sweeping to P_max and building pressure map");
+            commandSent = true;
+          }
+          
+          if(sharedData.P_current < sharedData.P_max) {
+            // Move gradually toward PWM_max
+            sharedData.PWM_value = 4095 - motor->m_zap->presentPosition(ID_NUM);
             
-            // Wait for user to detach pump
-            if(millis() - lastCommandTime > 3000) {
-                // Send the position command only once
-                if(commandSent) {
-                    targetPosition = 3000;
-                    // Use direct command to verify it's sent properly
-                    motor->m_zap->GoalPosition(ID_NUM, targetPosition);
-                    int startrange=30;
-                    if(sharedData.PWM_value<=targetPosition+startrange
-                    || sharedData.PWM_value>=targetPosition-startrange) {
-                        Serial.printf("Command sent to move to position %d\n", targetPosition);
-                        lastCommandTime = millis();
-                        commandSent = false; // Reset for next command
-                    } else {
-                        Serial.println("ERROR: Failed to send motor command!");
-                    }
-                }
-                
-                // Check if motor has reached target or timeout
-                currentPosition = motor->m_zap->presentPosition(ID_NUM);
-                if(abs(currentPosition - targetPosition) < 10 || millis() - lastCommandTime > 5000) {
-                    Serial.println("Motor reached position or timeout. Please reattach pump.");
-                    motor->m_zap->GoalSpeed(ID_NUM, 10); // Set to slow speed
-                    lastCommandTime = millis();
-                    stage++;
-                    commandSent = false;
-                }
-            }
-            break;
-          case 1: // Move back until minimum sensor reading
-              if(millis() - lastCommandTime > 4000) { // Ensure pump has been attached
-                  if(!commandSent) {
-                      Serial.println("Retracting until hitting minimum sensor pressure");
-                      commandSent = true;
-                  }
-                  
-                  // Check sensor reading
-                  if(sharedData.P_current >= sharedData.P_min) {
-                      // Still above min pressure, continue moving
-                      targetPosition = 4095 - sharedData.PWM_min;
-                      motor->m_zap->GoalPosition(ID_NUM, targetPosition);
-                  } else {
-                      // Reached target pressure
-                      currentPosition = motor->m_zap->presentPosition(ID_NUM);
-                      Serial.printf("Retracted to position %d\n", currentPosition);
-                      // Hold current position
-                      motor->m_zap->GoalPosition(ID_NUM, currentPosition);
-                      stage++;
-                      commandSent = false;
-                  }
-              }
-              break;
-              
-          case 2: // Find P_min position precisely
-              if(!commandSent) {
-                  Serial.printf("Finding precise P_min (%2.2f) position, current pressure: %.2f\n", 
-                      sharedData.P_min, sharedData.P_current);
-                  commandSent = true;
-              }
-              
-              if(sharedData.P_current > sharedData.P_min) {
-                  // Fine adjustment to find exact pressure
-                  targetPosition = 4095 - sharedData.PWM_min;
-                  motor->m_zap->GoalPosition(ID_NUM, targetPosition);
-              } else {
-                  // Save the position where P_min is achieved
-                  currentPosition = motor->m_zap->presentPosition(ID_NUM);
-                  sharedData.PWM_c_min = 4095 - currentPosition;
-                  sharedData.PWM_last_min = sharedData.PWM_c_min;
-                  
-                  // Hold current position
-                  motor->m_zap->GoalPosition(ID_NUM, currentPosition);
-                  
-                  Serial.printf("Found P_min at PWM value %d\n", sharedData.PWM_c_min);
-                  stage++;
-                  commandSent = false;
-              }
-              break;
-              
-          case 3: // Sweep to P_max while recording pressure map
-              if(!commandSent) {
-                  Serial.println("Sweeping to P_max and building pressure map");
-                  commandSent = true;
-              }
-              
-              if(sharedData.P_current < sharedData.P_max) {
-                  // Move gradually toward PWM_max
-                  currentPosition = motor->m_zap->presentPosition(ID_NUM);
-                  
-                  // Record current pressure value in the mapping
-                  int pwm_value = 4095 - currentPosition;
-                  if(pwm_value >= sharedData.PWM_min && pwm_value <= sharedData.PWM_max) {
-                      sharedData.pmap[pwm_value] = sharedData.P_current;
-                  }
-                  
-                  // Move slowly to build a detailed mapping
-                  targetPosition = currentPosition - 1; // Small incremental movement
-                  if(targetPosition < sharedData.PWM_max) {
-                      targetPosition = sharedData.PWM_max;
-                  }
-                  motor->m_zap->GoalPosition(ID_NUM, targetPosition);
-              } else {
-                  // Reached or exceeded P_max
-                  currentPosition = motor->m_zap->presentPosition(ID_NUM);
-                  sharedData.PWM_c_max = 4095 - currentPosition;
-                  
-                  Serial.printf("Found P_max at PWM value %d\n", sharedData.PWM_c_max);
-                  stage++;
-                  commandSent = false;
-              }
-              break;
-              
-          default:
-              if(!commandSent) {
-                  Serial.println("Calibration complete. Resetting speed and returning to P_min position");
-                  // Reset move speed to default (500)
-                  motor->m_zap->GoalSpeed(ID_NUM, 500);
-                  // Return to P_min position
-                  targetPosition = 4095 - sharedData.PWM_c_min;
-                  motor->m_zap->GoalPosition(ID_NUM, targetPosition);
-                  
-                  commandSent = true;
-              }
-              
-              // Wait for motor to reach position
-              currentPosition = motor->m_zap->presentPosition(ID_NUM);
-              if(abs(currentPosition - targetPosition) < 10 || millis() - lastCommandTime > 5000) {
-                  // Mark calibration as complete
-                  sharedData.calibration_state = 2;
-                  stage = 0;
-                  commandSent = false;
-              }
-              break;
-        }
-        */
-      vTaskDelay(pdMS_TO_TICKS(8000));
-      sharedData.calibration_state=2;
+            // Record current pressure value in the mapping
+            sharedData.pmap[sharedData.PWM_value] = sharedData.P_current;
+            if(debug) Serial.printf("Making map: pmap[%4d]=%+2.3f\n",
+              sharedData.PWM_value, sharedData.pmap[sharedData.PWM_value]);
+            // Move slowly to build a detailed mapping
+            motor->m_zap->GoalPosition(ID_NUM, 0);
+          } else { // Reached or exceeded P_max
+            sharedData.PWM_value = 4095 - motor->m_zap->presentPosition(ID_NUM);
+            sharedData.PWM_c_max = sharedData.PWM_value;
+            if(debug) Serial.printf("Found P_max at PWM value %d\n", sharedData.PWM_c_max);
+            stage = 6;
+            commandSent = false;
+          }
+          break;
+          
+        case 6: // Finalize calibration
+          if(!commandSent) {
+            if(debug) Serial.println("Ending calibration. Resetting speed and returning to P_min position");
+            motor->m_zap->GoalSpeed(ID_NUM, 800);
+            // Return to P_min position
+            motor->m_zap->GoalPosition(ID_NUM, 4095-sharedData.PWM_c_min);
+            commandSent = true;
+            lastCommandTime = millis();
+          }
+          
+          currentPosition = 4095 - motor->m_zap->presentPosition(ID_NUM);
+          targetPosition = sharedData.PWM_c_min;
+          
+          if(abs(currentPosition - targetPosition) < 10 || millis() - lastCommandTime > 5000) {
+            // Clean the calibration array
+            cleanArray(sharedData.pmap, sharedData.PWM_c_min, sharedData.PWM_c_max);
+            
+            // Mark calibration as complete
+            if(debug) Serial.println("CAL STATE=2");
+            sharedData.calibration_state = 2;
+            stage = 0;
+            commandSent = false;
+            sharedData.cal_debug=false;
+          }
+          break;
+      }
     }
     
     // Yield to other tasks
