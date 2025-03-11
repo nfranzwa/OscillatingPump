@@ -1,33 +1,73 @@
 window.addEventListener('load', getReadings);
 var calibrationstate = 0;
 let hascalibrated = false;
+
+// Add a status message area to provide feedback
+function addStatusMessage(message, isError = false) {
+  const statusArea = document.getElementById('status-message') || createStatusArea();
+  statusArea.textContent = message;
+  statusArea.className = isError ? 'status-message error' : 'status-message success';
+  
+  // Clear message after 3 seconds
+  setTimeout(() => {
+    statusArea.textContent = '';
+    statusArea.className = 'status-message';
+  }, 3000);
+}
+
+// Create status area if it doesn't exist
+function createStatusArea() {
+  const statusArea = document.createElement('div');
+  statusArea.id = 'status-message';
+  statusArea.className = 'status-message';
+  document.querySelector('.container').after(statusArea);
+  return statusArea;
+}
+
 function updateMinMaxValues() {
   const minInput = document.getElementById('MinPressureInput');
   const maxInput = document.getElementById('MaxPressureInput');
-
-  // Get current values
   const minValue = parseInt(minInput.value);
   const maxValue = parseInt(maxInput.value);
-
-  // Update min/max constraints
+  
   if (minValue > maxValue) {
     minInput.value = maxValue;
-
-    // Send updated value to server
-    var xhr = new XMLHttpRequest();
-    xhr.open("GET", "/MinPressure?value=" + maxValue, true);
-    xhr.send();
+    sendValueToServer("MinPressure", maxValue);
   }
-
   updateChartScale();
 }
 
-// Modify your existing changeValues function
+// Improved function to send values to server with feedback
+function sendValueToServer(name, value) {
+  const path = "/" + name + "?value=" + value;
+  var xhr = new XMLHttpRequest();
+  
+  xhr.onreadystatechange = function() {
+    if (this.readyState == 4) {
+      if (this.status == 200) {
+        console.log("Value sent successfully: " + name + " = " + value);
+        addStatusMessage(name + " updated to " + value);
+      } else {
+        console.error("Error sending value: " + name);
+        addStatusMessage("Failed to update " + name, true);
+      }
+    }
+  };
+  
+  xhr.onerror = function() {
+    console.error("Request failed");
+    addStatusMessage("Connection error", true);
+  };
+  
+  xhr.open("GET", path, true);
+  xhr.timeout = 5000; // 5 second timeout
+  xhr.send();
+}
+
 function changeValues(button, step) {
-  let input = button.parentElement.querySelector("input"); // Get the input field
-  let name = input.getAttribute("name"); // Get the name attribute
+  let input = button.parentElement.querySelector("input");
+  let name = input.getAttribute("name");
   let maxLimit = Infinity;
-  // Apply different max constraints based on input name
 
   if (name === "MinPressure") {
     const maxPressure = parseInt(document.getElementById('MaxPressureInput').value);
@@ -45,11 +85,14 @@ function changeValues(button, step) {
   // Update constraints after value change
   updateMinMaxValues();
 
-  // Send value to server
-  var name2 = "/" + name + "?value=";
-  var xhr = new XMLHttpRequest();
-  xhr.open("GET", name2 + newValue, true);
-  xhr.send();
+  // Send value to server with improved function
+  sendValueToServer(name, newValue);
+  
+  // Visual feedback that value is being sent
+  button.disabled = true;
+  setTimeout(() => {
+    button.disabled = false;
+  }, 300);
 
   updateChartScale();
 }
@@ -58,30 +101,24 @@ function changeValues(button, step) {
 window.onload = function () {
   updateMinMaxValues();
   updateChartScale();
+  
+  // Add input event listeners for direct input
+  document.querySelectorAll('input[type="number"]').forEach(input => {
+    input.addEventListener('change', function() {
+      const name = this.getAttribute('name');
+      const value = this.value;
+      sendValueToServer(name, value);
+    });
+  });
 };
-
-document.getElementById("position-slider").addEventListener("input", function () {
-  let sliderValue = this.value; // Get the current slider value
-  editslider(sliderValue); // Send it via XMLHttpRequest
-});
-
-function editslider(value) {
-  var xhr = new XMLHttpRequest();
-  let url = "/position?value=" + value;
-  xhr.open("GET", url, true);
-  xhr.send();
-}
 
 const pressureData = [];
 let isRecording = false;
 let isCalibrated = 0;
 let hasrecorded = false;
 
-// Function to update UI based on calibration state
 function updateCalibrationUI() {
   const calibrationMessage = document.getElementById('calibration-message');
-  
-  // Handle button enabling/disabling
   if (calibrationstate == 0 || calibrationstate == 1) {
     document.getElementById('record-button').disabled = true;
     document.getElementById('standby-button').disabled = true;
@@ -89,14 +126,11 @@ function updateCalibrationUI() {
     document.getElementById('record-button').disabled = false;
     document.getElementById('standby-button').disabled = false;
   }
-
   if (calibrationstate == 3) {
     document.getElementById('calibration-button').disabled = true;
   } else {
     document.getElementById('calibration-button').disabled = false;
   }
-
-  // Update the calibration message
   if (calibrationstate == 1) {
     calibrationMessage.textContent = "Calibrating...";
     calibrationMessage.classList.remove("hidden");
@@ -106,6 +140,10 @@ function updateCalibrationUI() {
     calibrationMessage.textContent = "Calibration Done";
     calibrationMessage.classList.remove("hidden");
     calibrationMessage.className = "calibration-status complete";
+  } else if (calibrationstate == 4) {
+    calibrationMessage.textContent = "Standby Mode";
+    calibrationMessage.classList.remove("hidden");
+    calibrationMessage.className = "calibration-status standby";
   } else {
     calibrationMessage.classList.add("hidden");
   }
@@ -119,92 +157,51 @@ function toggleRecording(element) {
   if (isRecording) {
     button.textContent = "Stop Recording";
     button.style.backgroundColor = "red";
-    var path = "/record?value=1";
+    var value = 1;
   } else {
     button.textContent = "Start Recording";
     button.style.backgroundColor = "#04AA6D";
-    var path = "/record?value=0";
+    var value = 0;
   }
-  var xhr = new XMLHttpRequest();
-  xhr.open("GET", path, true);
-  xhr.send();
+  
+  sendValueToServer("record", value);
 }
-
-// Add event listener for toggle switch
-document.getElementById("modeToggle").addEventListener("change", function () {
-  const positionSlider = document.getElementById("position-slider");
-  const sliderContainer = document.querySelector(".slider-container");
-
-  if (this.checked) {
-    // Manual mode
-    calibrationstate = 3;
-    var path = "/calibration?value=" + String(calibrationstate);
-    positionSlider.disabled = false;
-    sliderContainer.classList.remove("disabled");
-  } else {
-    if (hascalibrated == true) {
-      calibrationstate = 2;
-    } else {
-      calibrationstate = 0;
-    }
-    // Automatic mode
-    var path = "/calibration?value=" + String(calibrationstate);
-    positionSlider.disabled = true;
-    sliderContainer.classList.add("disabled");
-  }
-
-  // Update UI based on new calibration state
-  updateCalibrationUI();
-
-  var xhr = new XMLHttpRequest();
-  xhr.open("GET", path, true);
-  xhr.send();
-});
 
 function calibrating(button) {
   calibrationstate = 1;
-  var path = "/calibration?value=" + String(calibrationstate);
+  button.disabled = true;
+  setTimeout(() => {
+    button.disabled = false;
+  }, 1000);
   
-  // Update UI based on new calibration state
   updateCalibrationUI();
-  
-  var xhr = new XMLHttpRequest;
-  xhr.open("GET", path, true);
-  xhr.send();
+  sendValueToServer("calibration", calibrationstate);
 }
 
 function standby(element) {
   calibrationstate = 4;
   hascalibrated = false;
-  var path = "/calibration?value=" + String(calibrationstate);
+  element.disabled = true;
+  setTimeout(() => {
+    element.disabled = false;
+  }, 1000);
   
-  // Update UI based on new calibration state
   updateCalibrationUI();
-  
-  var xhr = new XMLHttpRequest;
-  xhr.open("GET", path, true);
-  xhr.send();
+  sendValueToServer("calibration", calibrationstate);
 }
 
-
 function updateChart(newValue) {
-  pressureData.push(parseFloat(newValue)); // Ensure numerical values
-
+  pressureData.push(parseFloat(newValue));
   if (pressureData.length > 20) {
     pressureData.shift();
-    pressureChart.data.labels.shift(); // Remove oldest label
+    pressureChart.data.labels.shift();
   }
-
-  // Update labels dynamically to match data points
   pressureChart.data.labels = pressureData.map((_, index) => index + 1);
-
-  // Explicitly update the dataset reference
   pressureChart.data.datasets[0].data = [...pressureData];
-
-  // Ensure Chart.js properly detects the update
   pressureChart.update('none');
 }
 
+// Change the chart options to use fixed scale values
 const ctx = document.getElementById('pressuregraph').getContext('2d');
 const pressureChart = new Chart(ctx, {
   type: 'line',
@@ -225,26 +222,16 @@ const pressureChart = new Chart(ctx, {
       x: { title: { display: true, text: 'Data Points' } },
       y: {
         title: { display: true, text: 'Pressure (cmH20)' },
-        min: function() {
-          const minPressure = parseInt(document.getElementById('MinPressureInput').value);
-          return Math.max(0, minPressure - 10); // Ensure we don't go below 0
-        },
-        max: function() {
-          const maxPressure = parseInt(document.getElementById('MaxPressureInput').value);
-          return maxPressure + 10;
-        }
+        min: -30,  // Fixed minimum value
+        max: 70    // Fixed maximum value
       }
     }
   }
 });
 
+// Update the updateChartScale function to not change the scale
 function updateChartScale() {
-  const minPressure = parseInt(document.getElementById('MinPressureInput').value);
-  const maxPressure = parseInt(document.getElementById('MaxPressureInput').value);
-  
-  pressureChart.options.scales.y.min = Math.max(0, minPressure - 10); // Ensure we don't go below 0
-  pressureChart.options.scales.y.max = maxPressure + 10;
-  
+  // No need to adjust the scale anymore since we're using fixed values
   pressureChart.update();
 }
 
@@ -252,36 +239,57 @@ function getReadings() {
   var xhr = new XMLHttpRequest();
   xhr.onreadystatechange = function () {
     if (this.readyState == 4 && this.status == 200) {
+      console.log("Got readings from server");
+      // Parse response if needed
     }
   };
   xhr.open("GET", "/readings", true);
   xhr.send();
-
-  // Initialize the slider state based on the default toggle state
-  const modeToggle = document.getElementById("modeToggle");
-  const positionSlider = document.getElementById("position-slider");
-  const sliderContainer = document.querySelector(".slider-container");
-
-  if (!modeToggle.checked) {
-    // If automatic mode is the default (toggle not checked)
-    positionSlider.disabled = true;
-    sliderContainer.classList.add("disabled");
-  }
-  
-  // Initialize UI based on starting calibration state
   updateCalibrationUI();
 }
 
+// Add extra CSS to the page for status messages
+function addStyles() {
+  const style = document.createElement('style');
+  style.textContent = `
+    .status-message {
+      text-align: center;
+      padding: 8px;
+      margin: 10px 0;
+      border-radius: 4px;
+      transition: opacity 0.5s;
+      height: 20px;
+    }
+    .status-message.success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .status-message.error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+// Run once on page load
+addStyles();
+
+// Setup event source for server sent events
 if (!!window.EventSource) {
   var source = new EventSource('/events');
 
   source.addEventListener('open', function (e) {
     console.log("Events Connected");
+    addStatusMessage("Connected to server");
   }, false);
 
   source.addEventListener('error', function (e) {
     if (e.target.readyState != EventSource.OPEN) {
       console.log("Events Disconnected");
+      addStatusMessage("Disconnected from server", true);
     }
   }, false);
 
@@ -296,6 +304,17 @@ if (!!window.EventSource) {
       calibrationstate = 2;
       // Update UI based on new calibration state from server
       updateCalibrationUI();
+    }
+  }, false);
+
+  source.addEventListener('errorcode', function (e) {
+    let errorcode = parseInt(e.data);
+    if (errorcode == 1) {
+      const calibrationMessage = document.getElementById('calibration-message');
+      calibrationMessage.textContent = "Error";
+      calibrationMessage.classList.remove("hidden");
+      calibrationMessage.className = "calibration-status complete";
+      addStatusMessage("Error detected", true);
     }
   }, false);
 }
