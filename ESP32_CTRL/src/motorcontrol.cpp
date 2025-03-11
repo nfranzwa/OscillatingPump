@@ -174,6 +174,7 @@ void TF_calibrate(void* pvParams) {
             // Still above min pressure, continue moving
             targetPosition = 4095;
             motor->m_zap->GoalPosition(ID_NUM, targetPosition);
+            
           } else {
             // Reached target pressure
             sharedData.PWM_value = 4095 - motor->m_zap->presentPosition(ID_NUM);
@@ -200,6 +201,11 @@ void TF_calibrate(void* pvParams) {
             // set target to be full extended
             if(debug) Serial.println("Still over P");
             motor->m_zap->GoalPosition(ID_NUM, 4095);
+            if(motor->m_zap->presentPosition(ID_NUM)>=4090){
+              Serial.println("Unable to retract fully");
+              sharedData.calibration_state=4;
+              sharedData.error=1;
+            }
           } 
           else { // under or equal to Pmin
             // Save the position where P_min is achieved
@@ -230,6 +236,11 @@ void TF_calibrate(void* pvParams) {
               sharedData.PWM_value, sharedData.pmap[sharedData.PWM_value]);
             // Move slowly to build a detailed mapping
             motor->m_zap->GoalPosition(ID_NUM, 0);
+            if(sharedData.PWM_value>=10){
+              Serial.println("Unable to reach P_max");
+              sharedData.calibration_state=4;
+              sharedData.error=1;
+            }
           } else { // Reached or exceeded P_max
             sharedData.PWM_value = 4095 - motor->m_zap->presentPosition(ID_NUM);
             sharedData.PWM_c_max = sharedData.PWM_value;
@@ -266,7 +277,6 @@ void TF_calibrate(void* pvParams) {
           break;
       }
     }
-    
     // Yield to other tasks
     vTaskDelay(pdMS_TO_TICKS(20));
   }

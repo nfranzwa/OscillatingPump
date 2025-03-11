@@ -15,7 +15,6 @@ struct SharedData {
     String mode_current;    // Current mode
     String param_current;   // Current parameter being edited
     int value_current;      // Current value of the parameter
-    String err_msg="";
     std::array<float,4096> pmap;       // pressure mapped onto each position
     float P_minH2O;
     float P_maxH2O;
@@ -66,10 +65,17 @@ struct SharedData {
     int STATUS_PINS[5] ={1,2,3,4,5};
     bool wave_debug=false;
     bool cal_debug=true;
+    bool slope_debug=false;
     int prev_state;
     // how off the actual position is for a given P,
     // compared to when it was calibrated
     int leak_offset=0;
+    /* Error state sent by GPIO
+    0: nothing wrong
+    1: calibration fail
+    2: automatic fail (offset out of bounds)
+    */
+    int error;
 };
 
 extern SharedData sharedData;  // Declare the global instance of SharedData

@@ -10,14 +10,23 @@ int WaveGenerator::generatePWM() {
     // basically a rising triangle wave from 0 to CYCLE_TIME
     if (current_time < ASDR[0]) {
         //essentially an interpolation
-        return map(current_time, 0, ASDR[0], PWM_min, PWM_max);
+        if(transition="exp"){
+            float progress = (float)current_time / ASDR[0];
+            // Exponential curve for attack (eases in)
+            return PWM_min + (1.0 - exp(-2.0*progress))/(1.0 - exp(-2.0)) * (PWM_max - PWM_min);
+        }
+        else return map(current_time, 0, ASDR[0], PWM_min, PWM_max);
     }
     else if (current_time < (ASDR[0] + ASDR[1])) {
         return PWM_max;
     }
     else if (current_time < (ASDR[0] + ASDR[1] + ASDR[2])) {
-        return map(current_time - (ASDR[0] + ASDR[1]), 
-                  0, ASDR[2], PWM_max, PWM_min);
+        if(transition="exp"){
+            float progress = (float)(current_time - (ASDR[0] + ASDR[1]))/ ASDR[2];
+            // Exponential curve for attack (eases in)
+            return PWM_min + (exp(-2.0 * progress) - exp(-2.0))/(1.0 - exp(-2.0)) * (PWM_max - PWM_min);
+        }
+        else return map(current_time - (ASDR[0] + ASDR[1]), 0, ASDR[2], PWM_max, PWM_min);
     }
     else {
         return PWM_min;
@@ -102,6 +111,7 @@ void TF_wavegen(void *pvParameters) {
             sharedData.PWM_offset=mappedMax-mappedMin;
             if(sharedData.PWM_offset+sharedData.PWM_last_min>4095){
                 sharedData.calibration_state=4;
+                sharedData.error=2;
                 if(sharedData.wave_debug) Serial.println("movement would be out of range");
             }
             else{ // safe range of values;
@@ -134,8 +144,11 @@ int mapPos(float P_target) {
     float P_max = sharedData.pmap[sharedData.PWM_c_max];
     // if(sharedData.wave_debug) Serial.printf("Pm: %2.2f, PM: %2.2f, PT:%2.2f\n",P_min,P_max,P_target);
     // Clamp P_target to be within the actual pressure range
+    if(P_target<P_min || P_target>P_max){
+        sharedData.error=3;
+        Serial.println("Pressure bounds exceed calibration range, consider recalibrating");
+    }
     P_target = constrain(P_target, P_min, P_max);
-
     // Binary search to find closest pressure
     int left = sharedData.PWM_c_min;
     int right = sharedData.PWM_c_max;
