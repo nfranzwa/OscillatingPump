@@ -111,7 +111,9 @@ void TF_calibrate(void* pvParams) {
     if(sharedData.calibration_state == 0) {
       stage = 0;
       commandSent = false;
-      //TODO: reset pmap
+      int idle_PWM=2000;
+      sharedData.PWM_value=motor->m_zap->presentPosition(ID_NUM);
+      if(sharedData.PWM_value>=idle_PWM+10 || sharedData.PWM_value<=idle_PWM-10) motor->m_zap->GoalPosition(ID_NUM,idle_PWM);
     }
     // running calibration
     if(sharedData.calibration_state == 1) {
