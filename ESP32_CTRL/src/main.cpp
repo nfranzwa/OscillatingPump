@@ -45,7 +45,8 @@ PhysicalUI ui(CLK,DT,SW);
 // PSensor sensor1(P_PIN,"NXP", V_SUPPLY, V_MIN, V_MAX, P_MAX,P_MIN, ADC_RES); 
 // PSensor sensor2(P_PIN_NEW,"ABP",V_SUPPLY,V_MIN,V_MAX,P_MAX,P_MIN, ADC_RES);
 PSensor sensor1(P_PIN,"I2C",V_SUPPLY,V_MIN,V_MAX,P_MAX,P_MIN, ADC_RES);
-WaveGenerator wave(sharedData.PWM_min,sharedData.PWM_max);
+// Experimental: give it different waveform shapes: linear, exponential, sine
+WaveGenerator wave(sharedData.PWM_min,sharedData.PWM_max,"linear");
 MotorControl motor(MIGHTY_ZAP_RX,MIGHTY_ZAP_TX,MIGHTY_ZAP_EN);
 
 void setup() {
@@ -120,6 +121,10 @@ void loop() {
             sharedData.wave_debug=!sharedData.wave_debug;
             Serial.printf("Updated: wave debug=%d",sharedData.wave_debug);
         }
+        if (serialInput.equals("slope debug")){
+            sharedData.slope_debug=!sharedData.slope_debug;
+            Serial.printf("Updated: slope debug=%d",sharedData.slope_debug);
+        }
         if (serialInput.equals("cal debug")){
             sharedData.cal_debug=!sharedData.cal_debug;
             Serial.printf("Updated: cal debug=%d",sharedData.cal_debug);
@@ -135,6 +140,7 @@ void loop() {
             Serial.printf("Updated: Pm=%2.2f, PM=%2.2f\n",sharedData.P_min,sharedData.P_max);
         }
     }
+    if(sharedData.slope_debug) Serial.printf("%s: Value:%2.2f\n",wave.getTransition(),sharedData.PWM_value);
     //otherwise continue changing the sharedData.P_test as normal
     delay(100);
     // delay(100);
@@ -181,7 +187,7 @@ void TF_talk2web(void* pvParams){
         if(debug){
             Serial.printf("%f,%d\n",sharedData.P_current ,sharedData.calibration_state);
         }
-        mySerial.printf("%f,%d\n",sharedData.P_current*70.0307,sharedData.calibration_state);
+        mySerial.printf("%f,%d,%d\n",sharedData.P_current*70.0307,sharedData.calibration_state,sharedData.error);
         // Serial.println("T2W end of loop");
         vTaskDelay(pdMS_TO_TICKS(100));
     }
