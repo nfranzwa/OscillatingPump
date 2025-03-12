@@ -120,8 +120,8 @@ extern SharedData sharedData;  // Declare the global instance of SharedData
 constexpr int ID_NUM = 1;
 constexpr int MIN_POS= 100;
 constexpr int MAX_POS= 4095;
-constexpr int MIGHTY_ZAP_RX= 16;
-constexpr int MIGHTY_ZAP_TX= 17;
+constexpr int MIGHTY_ZAP_RX= 25;
+constexpr int MIGHTY_ZAP_TX= 23;
 constexpr int MIGHTY_ZAP_EN= 13;
 constexpr int LOOP_DELAY = 3;
 
