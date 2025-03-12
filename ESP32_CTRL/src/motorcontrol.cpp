@@ -61,6 +61,8 @@ void TF_motor(void* pvParams) {
   MotorControl* motor= (MotorControl*) pvParams;
   Serial.println("Motor Task");
   for(;;) {
+    sharedData.P_min=sharedData.P_minH2O/70.307;
+    sharedData.P_max=sharedData.P_maxH2O/70.307;
     if(sharedData.calibration_state==2){
       motor->m_zap->GoalPosition(ID_NUM, 4095 - sharedData.PWM_value);
     }

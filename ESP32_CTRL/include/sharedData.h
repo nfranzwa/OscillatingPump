@@ -16,8 +16,8 @@ struct SharedData {
     String param_current;   // Current parameter being edited
     int value_current;      // Current value of the parameter
     std::array<float,4096> pmap;       // pressure mapped onto each position
-    float P_minH2O;
-    float P_maxH2O;
+    float P_minH2O=-30.0;
+    float P_maxH2O=90.0;
     /*
     0: not calibrated
     1: calibrating

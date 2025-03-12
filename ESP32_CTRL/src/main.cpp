@@ -185,7 +185,7 @@ void TF_talk2web(void* pvParams){
             }
         }
         if(debug){
-            Serial.printf("%f,%d\n",sharedData.P_current ,sharedData.calibration_state);
+            Serial.printf("%f,%d,%d\n",sharedData.P_current ,sharedData.calibration_state,sharedData.error);
         }
         mySerial.printf("%f,%d,%d\n",sharedData.P_current*70.0307,sharedData.calibration_state,sharedData.error);
         // Serial.println("T2W end of loop");
