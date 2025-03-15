@@ -223,7 +223,7 @@ const pressureChart = new Chart(ctx, {
       y: {
         title: { display: true, text: 'Pressure (cmH20)' },
         min: -30,  // Fixed minimum value
-        max: 70    // Fixed maximum value
+        max: 90    // Fixed maximum value
       }
     }
   }
@@ -309,11 +309,16 @@ if (!!window.EventSource) {
 
   source.addEventListener('errorcode', function (e) {
     let errorcode = parseInt(e.data);
+    const calibrationMessage = document.getElementById('calibration-message');
     if (errorcode == 1) {
-      const calibrationMessage = document.getElementById('calibration-message');
-      calibrationMessage.textContent = "Error";
+      calibrationMessage.textContent = "Calibration Fail";
       calibrationMessage.classList.remove("hidden");
-      calibrationMessage.className = "calibration-status complete";
+      calibrationMessage.className = "calibration-status error";
+      addStatusMessage("Error detected", true);
+    } else if (errorcode == 2){
+      calibrationMessage.textContent = "Automatic Fail (Offset Out of Bounds)";
+      calibrationMessage.classList.remove("hidden");
+      calibrationMessage.className = "calibration-status error";
       addStatusMessage("Error detected", true);
     }
   }, false);

@@ -5,11 +5,11 @@
 #include <LittleFS.h>
 #include <Arduino_JSON.h>
 
-#define TXD1 16
-#define RXD1 17
+#define TXD1 19
+#define RXD1 18
 
-const int greenLedPin = 4;  // Main LED
-const int redLedPin = 0;
+const int greenLedPin = 26;  // Main LED
+const int redLedPin = 25;
 // Use Serial1 for UART communication
 // Add these variables to track changes
 String prev_minpresVal = "0";
@@ -29,12 +29,9 @@ const long forcedUpdateInterval = 2000;  // 2 seconds
 
 HardwareSerial mySerial(2);
 
-/*
+
 const char *ssid = "ESP32";
 const char *password = "ucsdpumpguest";
-*/
-const char *ssid = "Asian Crew";
-const char *password = "Agastulate";
 
 String calibrationstate = "0";
 int calint = 0;  // Global variable to track calibration state for LED status
@@ -80,25 +77,14 @@ void initLittleFS() {
 }
 
 void initWiFi() {
-  /*
+  
   WiFi.softAP(ssid, password);
   delay(100);
   IPAddress IP(192, 168, 1, 85);
   IPAddress NMask(255, 255, 255, 0);
   WiFi.softAPConfig(IP, IP, NMask);
-  */
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
-  //Serial.println(cmH20)
-  Serial.print("Connecting to WiFi ..");
-  while (WiFi.status() != WL_CONNECTED) {
-    Serial.print('.');
-    delay(1000);
-  }
-
-  Serial.println(WiFi.localIP());
-  //Serial.print("AP IP address: ");
-  //Serial.println(IP);
+  Serial.print("AP IP address: ");
+  Serial.println(IP);
 }
 
 // Improved sendToPeripheral function with buffer clearing
@@ -323,7 +309,7 @@ void loop() {
     Serial.println("Received: " + message);
     float sensorpres = 0.00000;
     int calibrstate = 0;
-    int errorcode = 0;
+    String errorcode = "0";
 
     if (message.length() > 0) {
       char inputArray[message.length() + 1];
@@ -379,7 +365,9 @@ void loop() {
   if ((currentMillis - lastTime) > timerDelay) {
     events.send("ping", NULL, millis());
     events.send(String(currentSensorPressure).c_str(), "pressure", millis());
-    events.send(String(errorcode).c_str(), "errorcode", millis());
+    //events.send(String(errorcode).c_str(), "errorcode", millis());
+    String bo = "1";
+    events.send(bo.c_str(),"errorcode",millis());
     events.send(String(calibrationstate).c_str(), "calstate", millis());
     lastTime = millis();
   }

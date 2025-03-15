@@ -8,8 +8,8 @@
 #define MAX_POS 4095  // Default max position
 #define TXD1 18
 #define RXD1 19
-#define MIGHTY_ZAP_RX 16  // Define RX pin for Serial2
-#define MIGHTY_ZAP_TX 17  // Define TX pin for Serial2
+#define MIGHTY_ZAP_RX 25  // Define RX pin for Serial2
+#define MIGHTY_ZAP_TX 23  // Define TX pin for Serial2
 #define MIGHTY_ZAP_EN 13  // Enable pin
 
 HardwareSerial mySerial(1);
