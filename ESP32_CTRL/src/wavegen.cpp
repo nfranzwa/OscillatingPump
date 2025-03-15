@@ -146,7 +146,7 @@ int mapPos(float P_target) {
     // Clamp P_target to be within the actual pressure range
     if(P_target<P_min || P_target>P_max){
         sharedData.error=3;
-        Serial.println("Pressure bounds exceed calibration range, consider recalibrating");
+        Serial.printf("P_m:%2.2f,P_M:%2.2f exceed calibration range, consider recalibrating\n",P_min,P_max);
     }
     P_target = constrain(P_target, P_min, P_max);
     // Binary search to find closest pressure

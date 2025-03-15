@@ -16,8 +16,8 @@ struct SharedData {
     String param_current;   // Current parameter being edited
     int value_current;      // Current value of the parameter
     std::array<float,4096> pmap;       // pressure mapped onto each position
-    float P_minH2O;
-    float P_maxH2O;
+    float P_minH2O=-30.0;
+    float P_maxH2O=90.0;
     /*
     0: not calibrated
     1: calibrating
@@ -120,8 +120,8 @@ extern SharedData sharedData;  // Declare the global instance of SharedData
 constexpr int ID_NUM = 1;
 constexpr int MIN_POS= 100;
 constexpr int MAX_POS= 4095;
-constexpr int MIGHTY_ZAP_RX= 16;
-constexpr int MIGHTY_ZAP_TX= 17;
+constexpr int MIGHTY_ZAP_RX= 25;
+constexpr int MIGHTY_ZAP_TX= 23;
 constexpr int MIGHTY_ZAP_EN= 13;
 constexpr int LOOP_DELAY = 3;
 
