@@ -1,5 +1,7 @@
 UCSD MAE 156 Capstone Project
 
+Link to UCSD Capstone Project Overview https://sites.google.com/eng.ucsd.edu/mae156b-2025winter-team06
+
 The provided code was developed using Arduino IDE and the Platform.io extension on VS Code.
 While it is possible to flash/deploy our software to an ESP32 through other means, we heavily recommend the two for ease of installing dependencies and following subsequent instructions.
 
